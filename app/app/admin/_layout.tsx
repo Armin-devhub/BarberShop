@@ -20,7 +20,8 @@ const NAV = [
   { label: 'Products', path: '/admin/products' },
   { label: 'Discounts', path: '/admin/discounts' },
   { label: 'Pay', path: '/admin/pay' },
-  { label: 'Reports', path: '/admin/reports' }
+  { label: 'Reports', path: '/admin/reports' },
+  { label: 'Settings', path: '/admin/settings' }
 ] as const;
 
 export default function AdminLayout() {

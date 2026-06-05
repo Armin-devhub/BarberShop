@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from './supabase';
+import { supabase, onBackendChange } from './supabase';
 import type { Staff } from './types';
 
 interface AuthContextValue {
@@ -17,6 +17,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [staff, setStaff] = useState<Staff | null>(null);
   const [loading, setLoading] = useState(true);
+  // Bumped when the backend (mock/live) is swapped, so the auth subscription
+  // below re-binds to the new backend's client.
+  const [backendVersion, setBackendVersion] = useState(0);
+
+  useEffect(() => onBackendChange(() => setBackendVersion((v) => v + 1)), []);
 
   async function loadStaff(authUserId: string): Promise<Staff | null> {
     // Try direct lookup first.
@@ -61,7 +66,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+    // Re-run on backend swap so we re-subscribe to the new client's auth.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [backendVersion]);
 
   async function reloadStaff() {
     if (session) await refresh(session);
