@@ -1,8 +1,9 @@
-// Shared types between the customer web (Next.js) and staff/admin app (Expo).
-// Mirrors the Postgres schema in supabase/migrations.
+// Mirror of ../../shared/types.ts. Keep them in sync when the schema changes.
+// (Duplicated rather than imported so Metro doesn't have to walk outside the
+// project root, which is finicky on Windows.)
 
 export type StaffRole = 'barber' | 'admin';
-
+export type EmploymentType = 'full_time' | 'commission';
 export type QueueStatus = 'waiting' | 'in_progress' | 'done' | 'cancelled';
 
 export interface Staff {
@@ -10,9 +11,39 @@ export interface Staff {
   auth_user_id: string | null;
   name: string;
   phone: string;
+  email: string | null;
   role: StaffRole;
+  employment_type: EmploymentType;
   active: boolean;
   created_at: string;
+}
+
+export interface ShopSettings {
+  id: number;
+  full_time_base_salary_sen: number;
+  full_time_commission_percent: number;
+  commission_only_percent: number;
+  updated_at: string;
+}
+
+export interface Earning {
+  id: string;
+  staff_id: string;
+  queue_entry_id: string | null;
+  amount_sen: number;
+  percent_applied: number | null;
+  earned_at: string;
+}
+
+export interface SalaryPayment {
+  staff_id: string;
+  period_year: number;
+  period_month: number;
+  paid: boolean;
+  paid_at: string;
+  paid_amount_sen: number | null;
+  notes: string | null;
+  updated_at: string;
 }
 
 export interface Service {
@@ -24,16 +55,19 @@ export interface Service {
   created_at: string;
 }
 
+export interface Product {
+  id: string;
+  name: string;
+  price_sen: number;
+  active: boolean;
+  created_at: string;
+}
+
 export interface Shift {
   id: string;
   staff_id: string;
   started_at: string;
   ended_at: string | null;
-}
-
-export interface ShiftService {
-  shift_id: string;
-  service_id: string;
 }
 
 export interface DiscountCode {
@@ -67,43 +101,8 @@ export interface QueueEntry {
   completed_at: string | null;
 }
 
-// Shape returned to anon clients (customer_phone and discount_code_id revoked).
-export type PublicQueueEntry = Omit<QueueEntry, 'customer_phone' | 'discount_code_id'>;
-
-export interface BarberOnShift {
-  shift_id: string;
-  started_at: string;
-  staff_id: string;
-  staff_name: string;
-  waiting_count: number;
-}
-
-export interface BarberShiftService {
-  shift_id: string;
-  staff_id: string;
-  staff_name: string;
-  service_id: string;
-  service_name: string;
-  price_sen: number;
-  duration_minutes: number;
-}
-
-export interface DiscountPreview {
-  valid: boolean;
-  percent: number | null;
-  base_price_sen: number | null;
-  final_price_sen: number | null;
-  message: string;
-}
-
-// Helpers
 export const formatRM = (sen: number): string => `RM ${(sen / 100).toFixed(2)}`;
 
-/**
- * Normalize a Malaysian phone number for use in wa.me URLs.
- * Accepts: "0123456789", "+60123456789", "60 12 345 6789", "123456789"
- * Returns: "60123456789" (digits only, with country code)
- */
 export const normalizeMyPhone = (raw: string): string => {
   const digits = raw.replace(/\D/g, '');
   if (digits.startsWith('60')) return digits;
@@ -111,10 +110,6 @@ export const normalizeMyPhone = (raw: string): string => {
   return '60' + digits;
 };
 
-/**
- * Build a wa.me URL with a pre-filled message. The customer's phone (already
- * normalized) goes in the URL; staff taps Send in their phone's WhatsApp app.
- */
 export const buildWhatsAppUrl = (phone: string, message: string): string => {
   const normalized = normalizeMyPhone(phone);
   return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;

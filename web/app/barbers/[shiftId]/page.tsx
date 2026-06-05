@@ -55,7 +55,6 @@ export default function BarberServicesPage() {
     };
   }, [shiftId]);
 
-  // Re-preview the discount when service or code changes.
   useEffect(() => {
     if (!selectedServiceId || !discountInput.trim()) {
       setDiscountPreview(null);
@@ -123,54 +122,82 @@ export default function BarberServicesPage() {
   })();
 
   if (checking) {
-    return <main className="pt-8 text-center text-stone-500">Checking…</main>;
+    return <main className="pt-8 text-center text-novyx-muted">Checking…</main>;
   }
 
   return (
-    <main className="space-y-6">
-      <Link href="/barbers" className="text-sm text-stone-600 hover:text-stone-900">
-        ← Back to barbers
+    <main className="space-y-5 pt-4">
+      <div className="flex gap-1.5">
+        <span className="h-0.5 w-6 rounded-full bg-novyx-gold" />
+        <span className="h-0.5 w-6 rounded-full bg-novyx-gold" />
+        <span className="h-0.5 w-6 rounded-full bg-novyx-gold" />
+      </div>
+
+      <Link
+        href="/barbers"
+        className="block text-[10px] font-semibold tracking-[0.2em] text-novyx-gold hover:text-novyx-goldHi"
+      >
+        ← BACK TO BARBERS
       </Link>
 
-      <header>
-        <h1 className="text-2xl font-bold">{staffName || 'Loading…'}</h1>
-        <p className="mt-1 text-sm text-stone-600">Pick a service to join the queue.</p>
+      <header className="space-y-1">
+        <h1 className="font-serif text-3xl italic text-novyx-cream">{staffName || 'Loading…'}</h1>
+        <p className="text-sm italic text-novyx-muted">Pick a service.</p>
       </header>
 
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <p className="rounded-sm border border-novyx-danger/40 bg-novyx-danger/10 px-3 py-2 text-sm text-novyx-danger">
+          {error}
+        </p>
       )}
 
-      {services === null && !error && <p className="text-stone-500">Loading services…</p>}
+      {services === null && !error && <p className="text-novyx-muted">Loading services…</p>}
 
       {services && services.length === 0 && !error && (
-        <p className="rounded-lg bg-stone-100 p-4 text-stone-600">
+        <p className="rounded-sm border border-novyx-border bg-novyx-surface p-4 italic text-novyx-muted">
           This barber hasn't picked any services for today.
         </p>
       )}
 
       {services && services.length > 0 && (
-        <ul className="space-y-2">
-          {services.map((s) => {
+        <ul className="space-y-2.5">
+          {services.map((s, i) => {
             const isSelected = s.service_id === selectedServiceId;
             return (
               <li key={s.service_id}>
                 <button
                   type="button"
                   onClick={() => setSelectedServiceId(s.service_id)}
-                  className={`flex w-full items-center justify-between rounded-lg border p-4 text-left ${
-                    isSelected
-                      ? 'border-stone-900 bg-stone-900 text-white'
-                      : 'border-stone-200 bg-white hover:border-stone-400'
+                  className={`flex w-full items-center rounded-sm border px-4 py-3.5 text-left bg-novyx-surface ${
+                    isSelected ? 'border-novyx-gold border-2' : 'border-novyx-border hover:border-novyx-muted'
                   }`}
                 >
-                  <div>
-                    <div className="font-medium">{s.service_name}</div>
-                    <div className={`text-xs ${isSelected ? 'text-stone-300' : 'text-stone-500'}`}>
-                      ~{s.duration_minutes} min
-                    </div>
-                  </div>
-                  <div className="font-semibold">{formatRM(s.price_sen)}</div>
+                  {/* Radio indicator */}
+                  <span
+                    className={`mr-3 flex h-5 w-5 items-center justify-center rounded-full border ${
+                      isSelected
+                        ? 'border-novyx-gold bg-novyx-gold text-novyx-bg'
+                        : 'border-novyx-border'
+                    }`}
+                  >
+                    {isSelected && <span className="text-[10px] font-bold">✓</span>}
+                  </span>
+                  <span className="flex-1 space-y-0.5">
+                    <span className="block font-serif text-lg italic text-novyx-cream">
+                      {s.service_name}
+                    </span>
+                    <span className="block text-[10px] font-bold tracking-[0.15em] text-novyx-gold">
+                      ~{s.duration_minutes} MIN
+                      {isSelected ? ' · SELECTED' : ''}
+                    </span>
+                  </span>
+                  <span
+                    className={`text-base font-bold ${
+                      isSelected ? 'text-novyx-gold' : 'text-novyx-muted'
+                    }`}
+                  >
+                    {formatRM(s.price_sen)}
+                  </span>
                 </button>
               </li>
             );
@@ -179,9 +206,11 @@ export default function BarberServicesPage() {
       )}
 
       {selectedService && (
-        <section className="space-y-3 border-t border-stone-200 pt-4">
-          <label className="block">
-            <span className="text-sm font-medium text-stone-700">Discount code (optional)</span>
+        <section className="space-y-4 pt-2">
+          <label className="block space-y-1.5">
+            <span className="text-[10px] font-bold tracking-[0.15em] text-novyx-gold">
+              DISCOUNT CODE (OPTIONAL)
+            </span>
             <input
               type="text"
               value={discountInput}
@@ -189,28 +218,34 @@ export default function BarberServicesPage() {
               autoCapitalize="characters"
               autoCorrect="off"
               spellCheck={false}
-              className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 uppercase tracking-wider focus:border-stone-900 focus:outline-none"
-              placeholder="WELCOME10"
+              className={`block w-full rounded-sm border bg-novyx-surface px-3.5 py-3 uppercase tracking-[0.15em] text-novyx-cream focus:outline-none ${
+                discountPreview?.valid
+                  ? 'border-novyx-ok'
+                  : discountPreview && !discountPreview.valid
+                    ? 'border-novyx-danger'
+                    : 'border-novyx-border focus:border-novyx-gold'
+              }`}
+              placeholder="WALK10"
             />
             {validating && (
-              <span className="mt-1 block text-xs text-stone-500">Checking…</span>
+              <span className="block text-[11px] italic text-novyx-muted">Checking…</span>
             )}
             {!validating && discountPreview && discountInput.trim() && (
               <span
-                className={`mt-1 block text-xs ${
-                  discountPreview.valid ? 'text-emerald-600' : 'text-red-600'
+                className={`block text-[10px] font-bold tracking-[0.15em] ${
+                  discountPreview.valid ? 'text-novyx-ok' : 'text-novyx-danger'
                 }`}
               >
                 {discountPreview.valid && discountPreview.percent != null
-                  ? `${discountPreview.percent}% off applied`
+                  ? `${discountPreview.percent}% OFF APPLIED`
                   : discountPreview.message}
               </span>
             )}
           </label>
 
-          <div className="flex items-baseline justify-between rounded-lg bg-stone-100 p-4">
-            <span className="text-sm text-stone-600">Total</span>
-            <span className="text-2xl font-bold">
+          <div className="flex items-baseline justify-between border-y border-novyx-border py-3">
+            <span className="text-[10px] font-bold tracking-[0.2em] text-novyx-gold">TOTAL</span>
+            <span className="font-serif text-3xl italic text-novyx-cream">
               {finalPrice != null ? formatRM(finalPrice) : '—'}
             </span>
           </div>
@@ -219,9 +254,9 @@ export default function BarberServicesPage() {
             type="button"
             disabled={submitting || !selectedService || validating}
             onClick={handleJoinQueue}
-            className="w-full rounded-lg bg-stone-900 px-4 py-3 font-medium text-white hover:bg-stone-800 disabled:opacity-50"
+            className="block w-full rounded-sm bg-novyx-gold px-4 py-3.5 text-xs font-bold tracking-[0.2em] text-novyx-bg hover:bg-novyx-goldHi disabled:opacity-50"
           >
-            {submitting ? 'Joining…' : 'Join queue'}
+            {submitting ? 'JOINING…' : 'JOIN QUEUE  →'}
           </button>
         </section>
       )}

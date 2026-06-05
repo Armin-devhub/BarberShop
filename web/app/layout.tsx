@@ -1,9 +1,20 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
+import { Inter, Playfair_Display } from 'next/font/google';
+import FloatingNav from '@/components/FloatingNav';
+
+const sans = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
+const serif = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-serif',
+  style: ['normal', 'italic'],
+  display: 'swap'
+});
 
 export const metadata: Metadata = {
-  title: 'Book Your Cut',
-  description: 'Walk-in queue for the barbershop'
+  title: 'Novyx Barbershop',
+  description: 'Walk-in queue for Novyx Barbershop',
+  icons: { icon: '/blacklogo.jpeg', apple: '/blacklogo.jpeg' }
 };
 
 export const viewport: Viewport = {
@@ -14,9 +25,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-stone-50 text-stone-900 antialiased font-sans">
-        <div className="mx-auto max-w-md px-4 py-6">{children}</div>
+    <html lang="en" className={`${sans.variable} ${serif.variable}`}>
+      <body className="min-h-screen bg-novyx-bg text-novyx-cream antialiased font-sans">
+        <div className="mx-auto max-w-md px-6 pt-6 pb-28">{children}</div>
+        <FloatingNav />
       </body>
     </html>
   );

@@ -8,6 +8,12 @@ import { getCustomer } from '@/lib/customer';
 import { useActiveEntryRedirect } from '@/lib/active-entry';
 import type { BarberOnShift } from '@shared/types';
 
+function statusFor(waiting: number) {
+  if (waiting === 0) return { dot: 'bg-novyx-ok', label: 'Available', tone: 'text-novyx-ok' };
+  if (waiting <= 2) return { dot: 'bg-novyx-warn', label: `${waiting} ahead · short wait`, tone: 'text-novyx-muted' };
+  return { dot: 'bg-novyx-danger', label: `${waiting} ahead · long wait`, tone: 'text-novyx-muted' };
+}
+
 export default function BarbersPage() {
   const router = useRouter();
   const { checking } = useActiveEntryRedirect();
@@ -49,54 +55,79 @@ export default function BarbersPage() {
   }, [checking]);
 
   if (checking) {
-    return <main className="pt-8 text-center text-stone-500">Checking…</main>;
+    return <main className="pt-8 text-center text-novyx-muted">Checking…</main>;
   }
 
   return (
-    <main className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold">Pick a barber</h1>
-        <p className="mt-1 text-sm text-stone-600">
-          Only barbers on shift right now are shown.
-        </p>
+    <main className="space-y-5 pt-4">
+      <div className="flex gap-1.5">
+        <span className="h-0.5 w-6 rounded-full bg-novyx-gold" />
+        <span className="h-0.5 w-6 rounded-full bg-novyx-gold" />
+        <span className="h-0.5 w-6 rounded-full bg-novyx-border" />
+      </div>
+
+      <header className="space-y-1">
+        <p className="text-[10px] font-semibold tracking-[0.2em] text-novyx-gold">— NOVYX —</p>
+        <h1 className="font-serif text-3xl italic leading-tight text-novyx-cream">
+          Choose your barber
+        </h1>
+        <p className="text-sm italic text-novyx-muted">Tap a name to pick your service.</p>
       </header>
 
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <p className="rounded-sm border border-novyx-danger/40 bg-novyx-danger/10 px-3 py-2 text-sm text-novyx-danger">
+          {error}
+        </p>
       )}
 
-      {barbers === null && !error && (
-        <p className="text-stone-500">Loading…</p>
-      )}
+      {barbers === null && !error && <p className="text-novyx-muted">Loading…</p>}
 
       {barbers && barbers.length === 0 && (
-        <div className="rounded-lg bg-stone-100 p-6 text-center">
-          <p className="font-medium text-stone-700">No barbers on shift right now.</p>
-          <p className="mt-1 text-sm text-stone-500">
-            This page updates live — hang tight.
-          </p>
+        <div className="rounded-sm border border-novyx-border bg-novyx-surface p-6 text-center">
+          <p className="font-medium text-novyx-cream">No barbers on shift right now.</p>
+          <p className="mt-1 text-sm italic text-novyx-muted">This page updates live — hang tight.</p>
         </div>
       )}
 
       {barbers && barbers.length > 0 && (
-        <ul className="space-y-3">
-          {barbers.map((b) => (
-            <li key={b.shift_id}>
-              <Link
-                href={`/barbers/${b.shift_id}`}
-                className="flex items-center justify-between rounded-lg border border-stone-200 bg-white p-4 hover:border-stone-400"
-              >
-                <span className="font-medium">{b.staff_name}</span>
-                <span className="text-sm text-stone-600">
-                  {b.waiting_count === 0
-                    ? 'No one waiting'
-                    : `${b.waiting_count} ahead of you`}
-                </span>
-              </Link>
-            </li>
-          ))}
+        <ul className="space-y-2.5">
+          {barbers.map((b, i) => {
+            const s = statusFor(b.waiting_count);
+            const isFree = b.waiting_count === 0;
+            return (
+              <li key={b.shift_id}>
+                <Link
+                  href={`/barbers/${b.shift_id}`}
+                  className={`flex items-center rounded-sm border bg-novyx-surface px-4 py-3.5 hover:border-novyx-gold ${
+                    isFree ? 'border-novyx-gold' : 'border-novyx-border'
+                  }`}
+                >
+                  <span className="w-7 text-[11px] font-bold tracking-wider text-novyx-gold">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <span className="flex-1 space-y-0.5">
+                    <span className="block font-serif text-xl italic text-novyx-cream">
+                      {b.staff_name}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+                      <span className={`text-[11px] ${isFree ? 'font-semibold text-novyx-gold' : s.tone}`}>
+                        {isFree ? 'Free now' : s.label}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="text-lg text-novyx-gold">→</span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
+
+      <div className="flex items-center gap-1.5 pt-2">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-novyx-ok" />
+        <span className="text-[10px] italic text-novyx-subtle">Updates live</span>
+      </div>
     </main>
   );
 }

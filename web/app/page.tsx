@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { saveCustomer } from '@/lib/customer';
 import { useActiveEntryRedirect } from '@/lib/active-entry';
@@ -14,7 +15,7 @@ export default function LandingPage() {
   const [error, setError] = useState('');
 
   if (checking) {
-    return <main className="pt-8 text-center text-stone-500">Checking…</main>;
+    return <main className="pt-8 text-center text-novyx-muted">Checking…</main>;
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -35,52 +36,69 @@ export default function LandingPage() {
   }
 
   return (
-    <main className="space-y-8 pt-8">
-      <header className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Welcome</h1>
-        <p className="mt-2 text-stone-600">
-          Enter your details to join the barbershop queue.
-        </p>
+    <main className="space-y-6 pt-4">
+      {/* Step indicator */}
+      <div className="flex gap-1.5">
+        <span className="h-0.5 w-6 rounded-full bg-novyx-gold" />
+        <span className="h-0.5 w-6 rounded-full bg-novyx-border" />
+        <span className="h-0.5 w-6 rounded-full bg-novyx-border" />
+      </div>
+
+      <header className="space-y-2">
+        <Image
+          src="/blacklogo.jpeg"
+          alt="Novyx"
+          width={48}
+          height={48}
+          className="rounded-full object-cover"
+          priority
+        />
+        <p className="text-[10px] font-semibold tracking-[0.2em] text-novyx-gold">— NOVYX —</p>
+        <h1 className="font-serif text-4xl italic text-novyx-cream">Welcome</h1>
+        <p className="text-sm italic text-novyx-muted">Tell us who you are to join the queue.</p>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <label className="block">
-          <span className="text-sm font-medium text-stone-700">Your name</span>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <label className="block space-y-1.5">
+          <span className="text-[10px] font-bold tracking-[0.15em] text-novyx-gold">YOUR NAME</span>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="given-name"
-            className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base focus:border-stone-900 focus:outline-none"
-            placeholder="Ahmad"
+            className="block w-full rounded-sm border border-novyx-border bg-novyx-surface px-3.5 py-3 text-base text-novyx-cream placeholder:text-novyx-subtle focus:border-novyx-gold focus:outline-none"
+            placeholder="Daniel Tan"
           />
         </label>
 
-        <label className="block">
-          <span className="text-sm font-medium text-stone-700">Phone number</span>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            autoComplete="tel"
-            inputMode="numeric"
-            className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base focus:border-stone-900 focus:outline-none"
-            placeholder="0123456789"
-          />
-          <span className="mt-1 block text-xs text-stone-500">
-            We send your receipt to this number on WhatsApp.
-          </span>
+        <label className="block space-y-1.5">
+          <span className="text-[10px] font-bold tracking-[0.15em] text-novyx-gold">WHATSAPP PHONE</span>
+          <div className="flex items-stretch rounded-sm border border-novyx-border bg-novyx-surface focus-within:border-novyx-gold">
+            <span className="flex items-center px-3.5 text-base font-semibold text-novyx-gold">+60</span>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              autoComplete="tel"
+              inputMode="numeric"
+              className="block w-full bg-transparent py-3 pr-3.5 text-base text-novyx-cream placeholder:text-novyx-subtle focus:outline-none"
+              placeholder="12 345 6789"
+            />
+          </div>
+          <span className="block text-[11px] italic text-novyx-subtle">We text your receipt here.</span>
         </label>
 
         {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+          <p className="rounded-sm border border-novyx-danger/40 bg-novyx-danger/10 px-3 py-2 text-sm text-novyx-danger">
+            {error}
+          </p>
         )}
 
         <button
           type="submit"
-          className="w-full rounded-lg bg-stone-900 px-4 py-3 font-medium text-white hover:bg-stone-800 active:bg-stone-700"
+          className="block w-full rounded-sm bg-novyx-gold px-4 py-3.5 text-xs font-bold tracking-[0.2em] text-novyx-bg hover:bg-novyx-goldHi"
         >
-          Continue
+          CONTINUE
         </button>
       </form>
     </main>

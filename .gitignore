@@ -48,3 +48,6 @@ Thumbs.db
 # Supabase
 supabase/.branches
 supabase/.temp
+
+# Test artifacts (Playwright MCP screenshots/logs)
+.playwright-mcp/

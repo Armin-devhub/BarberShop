@@ -3,9 +3,24 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 html, body {
   height: 100%;
+}
+
+body {
+  background-color: #0A0A0A;
+  color: #E8DDC9;
+}
+
+/* Caret + selection in brand colors */
+::selection {
+  background-color: #B89865;
+  color: #0A0A0A;
+}
+
+input, button, textarea {
+  caret-color: #B89865;
 }

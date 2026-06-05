@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Novyx Barbershop",
+    "slug": "novyx-barbershop",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "novyx",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.barbershop.admin"
+    },
+    "android": {
+      "package": "com.barbershop.admin"
+    },
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}
