@@ -46,6 +46,7 @@ export default function BarbersPage() {
       .channel(`barbers-on-shift-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'queue_entries' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'breaks' }, load)
       .subscribe();
 
     return () => {

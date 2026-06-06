@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase';
 import {
   buildWhatsAppUrl,
   formatRM,
+  type Break,
   type QueueEntry,
   type Service,
   type Shift,
@@ -37,6 +38,7 @@ export default function StaffDashboard() {
   const [services, setServices] = useState<Service[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [queue, setQueue] = useState<QueueEntryWithService[]>([]);
+  const [activeBreak, setActiveBreak] = useState<Break | null>(null);
   const [busy, setBusy] = useState(false);
 
   // Price adjustment modal.
@@ -44,6 +46,10 @@ export default function StaffDashboard() {
   const [adjustMode, setAdjustMode] = useState<'add' | 'reduce'>('add');
   const [adjustText, setAdjustText] = useState('');
   const [adjustBusy, setAdjustBusy] = useState(false);
+
+  // Custom-service price entry (barber sets the price before finishing).
+  const [customPriceText, setCustomPriceText] = useState('');
+  const [customPriceBusy, setCustomPriceBusy] = useState(false);
 
   useEffect(() => {
     if (!staffId) return;
@@ -76,7 +82,7 @@ export default function StaffDashboard() {
       .from('queue_entries')
       .select(
         `id, staff_id, shift_id, queue_number, queue_date, status, service_id,
-         customer_name, customer_phone, base_price_sen, final_price_sen, price_adjustment_sen,
+         customer_name, base_price_sen, final_price_sen, price_adjustment_sen, discount_percent,
          created_at, started_at, completed_at,
          services:service_id ( name )`
       )
@@ -90,9 +96,21 @@ export default function StaffDashboard() {
     setQueue((data as unknown as QueueEntryWithService[]) ?? []);
   }, [staffId]);
 
+  const loadBreak = useCallback(async () => {
+    if (!staffId) return;
+    const { data } = await supabase
+      .from('breaks')
+      .select('*')
+      .eq('staff_id', staffId)
+      .is('ended_at', null)
+      .maybeSingle();
+    setActiveBreak((data as Break) ?? null);
+  }, [staffId]);
+
   useEffect(() => {
     if (!staffId || shift === 'unknown') return;
     loadQueue();
+    loadBreak();
     const channel = supabase
       .channel(`staff-${staffId}-queue-${Math.random().toString(36).slice(2)}`)
       .on(
@@ -105,11 +123,21 @@ export default function StaffDashboard() {
         },
         loadQueue
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'breaks',
+          filter: `staff_id=eq.${staffId}`
+        },
+        loadBreak
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [shift, staffId, loadQueue]);
+  }, [shift, staffId, loadQueue, loadBreak]);
 
   async function handleStartShift() {
     if (selected.size === 0) {
@@ -143,11 +171,41 @@ export default function StaffDashboard() {
     setSelected(new Set());
   }
 
-  async function handleAdvance() {
+  // Manual flow: completing the current cut does NOT auto-start the next one.
+  async function handleComplete() {
     setBusy(true);
-    const { error } = await supabase.rpc('advance_queue', { p_staff_id: staffId });
+    const { error } = await supabase.rpc('complete_current_entry', { p_staff_id: staffId });
     setBusy(false);
     if (error) Alert.alert('Error', error.message);
+  }
+
+  async function handleStartNext() {
+    setBusy(true);
+    const { error } = await supabase.rpc('start_next_entry', { p_staff_id: staffId });
+    setBusy(false);
+    if (error) Alert.alert('Error', error.message);
+  }
+
+  async function handleStartBreak() {
+    setBusy(true);
+    const { error } = await supabase.rpc('start_break', { p_staff_id: staffId });
+    setBusy(false);
+    if (error) {
+      Alert.alert('Error', error.message);
+      return;
+    }
+    loadBreak();
+  }
+
+  async function handleEndBreak() {
+    setBusy(true);
+    const { error } = await supabase.rpc('end_break', { p_staff_id: staffId });
+    setBusy(false);
+    if (error) {
+      Alert.alert('Error', error.message);
+      return;
+    }
+    loadBreak();
   }
 
   async function handleCancelEntry(entry: QueueEntryWithService, kind: 'waiting' | 'in_chair') {
@@ -217,21 +275,56 @@ export default function StaffDashboard() {
     loadQueue();
   }
 
+  async function handleSetCustomPrice(entry: QueueEntryWithService) {
+    const amount = parseFloat(customPriceText.replace(',', '.'));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      const msg = 'Enter an amount greater than 0.';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Invalid amount', msg);
+      return;
+    }
+    setCustomPriceBusy(true);
+    const { error } = await supabase.rpc('staff_set_custom_price', {
+      p_entry_id: entry.id,
+      p_price_sen: Math.round(amount * 100)
+    });
+    setCustomPriceBusy(false);
+    if (error) {
+      if (Platform.OS === 'web') window.alert(`Set price failed: ${error.message}`);
+      else Alert.alert('Set price failed', error.message);
+      return;
+    }
+    setCustomPriceText('');
+    loadQueue();
+  }
+
   async function handleSendReceipt(entry: QueueEntryWithService) {
-    const svcName = entry.services?.name ?? 'Service';
+    const svcName = entry.services?.name ?? 'Custom service';
+    const base = entry.base_price_sen ?? 0;
+    const final = entry.final_price_sen ?? 0;
     const adj = entry.price_adjustment_sen;
-    const discount = entry.base_price_sen + adj - entry.final_price_sen;
-    const lines = [`${svcName} - ${formatRM(entry.base_price_sen)}`];
+    const discount = base + adj - final;
+    const lines = [`${svcName} - ${formatRM(base)}`];
     if (adj > 0) lines.push(`Add-on - +${formatRM(adj)}`);
     else if (adj < 0) lines.push(`Reduction - -${formatRM(Math.abs(adj))}`);
     if (discount > 0) lines.push(`Discount - -${formatRM(discount)}`);
-    lines.push(`Total - ${formatRM(entry.final_price_sen)}`);
+    lines.push(`Total - ${formatRM(final)}`);
+
+    // customer_phone is no longer readable over the API; fetch it for this one
+    // entry through the operator-gated RPC.
+    const { data: phone, error: phoneErr } = await supabase.rpc('get_entry_phone', {
+      p_entry_id: entry.id
+    });
+    if (phoneErr || !phone) {
+      Alert.alert('Could not load contact', phoneErr?.message ?? 'No phone on file.');
+      return;
+    }
 
     const message =
       `Hi ${entry.customer_name}!\n\nThanks for visiting ${brand.name}.\n\n` +
       lines.join('\n') +
       `\n\nQueue #${entry.queue_number}\n\nSee you next time!`;
-    const url = buildWhatsAppUrl(entry.customer_phone, message);
+    const url = buildWhatsAppUrl(phone as string, message);
     const ok = await Linking.canOpenURL(url);
     if (!ok) {
       Alert.alert('WhatsApp not installed', 'Install WhatsApp to send receipts.');
@@ -321,6 +414,10 @@ export default function StaffDashboard() {
   const inProgress = queue.find((q) => q.status === 'in_progress');
   const waiting = queue.filter((q) => q.status === 'waiting');
   const onShift = !!shift;
+  // A custom-service entry that the barber hasn't priced yet — must set a price
+  // before the cut can be completed.
+  const inProgressCustomUnpriced =
+    !!inProgress && inProgress.service_id == null && inProgress.final_price_sen == null;
 
   return (
     <>
@@ -365,37 +462,106 @@ export default function StaffDashboard() {
         )}
       </View>
 
+      {/* Break control — only while on shift */}
+      {onShift &&
+        (activeBreak ? (
+          <View style={s.breakBanner}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.breakTitle}>On break · hidden from customers</Text>
+              <Text style={s.breakSub}>
+                {activeBreak.started_at
+                  ? `Resting since ${new Date(activeBreak.started_at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}`
+                  : 'Timer starts once you finish the remaining queue'}
+              </Text>
+            </View>
+            <Pressable onPress={handleEndBreak} disabled={busy} style={s.continueBtn}>
+              <Text style={s.continueBtnText}>Continue shift</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable onPress={handleStartBreak} disabled={busy} style={s.breakBtn}>
+            <Text style={s.breakBtnText}>☕  Take a break</Text>
+          </Pressable>
+        ))}
+
       {inProgress ? (
         <View style={s.currentCard}>
           <Text style={s.currentLabel}>Now serving</Text>
           <Text style={s.currentName}>{inProgress.customer_name}</Text>
-          <Text style={s.currentMeta}>
-            {inProgress.services?.name ?? '—'} · {formatRM(inProgress.final_price_sen)}
-          </Text>
-          {inProgress.price_adjustment_sen !== 0 && (
-            <Text style={s.adjustNote}>
-              {inProgress.price_adjustment_sen > 0 ? 'Add-on +' : 'Reduction -'}
-              {formatRM(Math.abs(inProgress.price_adjustment_sen))} applied
-            </Text>
+
+          {inProgressCustomUnpriced ? (
+            <>
+              <Text style={s.currentMeta}>Custom service · enter the price to finish</Text>
+              {inProgress.discount_percent ? (
+                <Text style={s.adjustNote}>
+                  {inProgress.discount_percent}% discount will apply to the price
+                </Text>
+              ) : null}
+              <View style={s.customPriceRow}>
+                <TextInput
+                  style={s.customPriceInput}
+                  value={customPriceText}
+                  onChangeText={setCustomPriceText}
+                  keyboardType="decimal-pad"
+                  placeholder="Price e.g. 25.00"
+                  placeholderTextColor={colors.subtle}
+                  onSubmitEditing={() => handleSetCustomPrice(inProgress)}
+                />
+                <Pressable
+                  style={[s.setPriceBtn, customPriceBusy && s.disabled]}
+                  onPress={() => handleSetCustomPrice(inProgress)}
+                  disabled={customPriceBusy}
+                >
+                  {customPriceBusy ? (
+                    <ActivityIndicator color={colors.primaryText} />
+                  ) : (
+                    <Text style={s.setPriceBtnText}>Set price</Text>
+                  )}
+                </Pressable>
+              </View>
+              <Pressable
+                style={s.cancelInChairBtn}
+                onPress={() => handleCancelEntry(inProgress, 'in_chair')}
+                disabled={busy}
+              >
+                <Text style={s.cancelInChairText}>Cancel</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Text style={s.currentMeta}>
+                {(inProgress.services?.name ?? 'Custom service')} ·{' '}
+                {formatRM(inProgress.final_price_sen ?? 0)}
+              </Text>
+              {inProgress.price_adjustment_sen !== 0 && (
+                <Text style={s.adjustNote}>
+                  {inProgress.price_adjustment_sen > 0 ? 'Add-on +' : 'Reduction -'}
+                  {formatRM(Math.abs(inProgress.price_adjustment_sen))} applied
+                </Text>
+              )}
+              <View style={s.adjustRow}>
+                <Pressable style={s.adjustBtn} onPress={() => openAdjust(inProgress, 'add')}>
+                  <Text style={s.adjustBtnText}>+ Add charge</Text>
+                </Pressable>
+                <Pressable style={s.adjustBtn} onPress={() => openAdjust(inProgress, 'reduce')}>
+                  <Text style={s.adjustBtnText}>− Reduce</Text>
+                </Pressable>
+              </View>
+              <Pressable style={s.receiptBtn} onPress={() => handleSendReceipt(inProgress)}>
+                <Text style={s.receiptBtnText}>Send WhatsApp receipt →</Text>
+              </Pressable>
+              <Pressable
+                style={s.cancelInChairBtn}
+                onPress={() => handleCancelEntry(inProgress, 'in_chair')}
+                disabled={busy}
+              >
+                <Text style={s.cancelInChairText}>Cancel</Text>
+              </Pressable>
+            </>
           )}
-          <View style={s.adjustRow}>
-            <Pressable style={s.adjustBtn} onPress={() => openAdjust(inProgress, 'add')}>
-              <Text style={s.adjustBtnText}>+ Add charge</Text>
-            </Pressable>
-            <Pressable style={s.adjustBtn} onPress={() => openAdjust(inProgress, 'reduce')}>
-              <Text style={s.adjustBtnText}>− Reduce</Text>
-            </Pressable>
-          </View>
-          <Pressable style={s.receiptBtn} onPress={() => handleSendReceipt(inProgress)}>
-            <Text style={s.receiptBtnText}>Send WhatsApp receipt →</Text>
-          </Pressable>
-          <Pressable
-            style={s.cancelInChairBtn}
-            onPress={() => handleCancelEntry(inProgress, 'in_chair')}
-            disabled={busy}
-          >
-            <Text style={s.cancelInChairText}>Cancel</Text>
-          </Pressable>
         </View>
       ) : (
         <View style={s.emptyCard}>
@@ -408,21 +574,24 @@ export default function StaffDashboard() {
       )}
 
       <Pressable
-        style={[s.primary, (busy || (waiting.length === 0 && !inProgress)) && s.disabled]}
-        onPress={handleAdvance}
-        disabled={busy || (waiting.length === 0 && !inProgress)}
+        style={[
+          s.primary,
+          (busy || inProgressCustomUnpriced || (waiting.length === 0 && !inProgress)) && s.disabled
+        ]}
+        onPress={inProgress ? handleComplete : handleStartNext}
+        disabled={busy || inProgressCustomUnpriced || (waiting.length === 0 && !inProgress)}
       >
         {busy ? (
           <ActivityIndicator color={colors.primaryText} />
         ) : (
           <Text style={s.primaryText}>
-            {inProgress
-              ? waiting.length > 0
-                ? 'Done · Next customer →'
-                : 'Done · End service ✓'
-              : waiting.length > 0
-                ? 'Start next customer →'
-                : 'No one waiting'}
+            {inProgressCustomUnpriced
+              ? 'Set the price first'
+              : inProgress
+                ? 'Done ✓'
+                : waiting.length > 0
+                  ? 'Start next customer →'
+                  : 'No one waiting'}
           </Text>
         )}
       </Pressable>
@@ -438,10 +607,15 @@ export default function StaffDashboard() {
             </View>
             <View style={{ flex: 1, marginLeft: space.md }}>
               <Text style={s.queueName}>{q.customer_name}</Text>
-              <Text style={s.queueService}>{q.services?.name}</Text>
+              <Text style={s.queueService}>{q.services?.name ?? 'Custom service'}</Text>
             </View>
-            <Pressable onPress={() => openAdjust(q, 'add')} hitSlop={6}>
-              <Text style={s.queuePrice}>{formatRM(q.final_price_sen)}</Text>
+            <Pressable
+              onPress={() => q.final_price_sen != null && openAdjust(q, 'add')}
+              hitSlop={6}
+            >
+              <Text style={s.queuePrice}>
+                {q.final_price_sen != null ? formatRM(q.final_price_sen) : 'Custom'}
+              </Text>
             </Pressable>
             <Pressable
               style={s.rejectBtn}
@@ -467,7 +641,7 @@ export default function StaffDashboard() {
           <Text style={s.modalTitle}>Adjust price</Text>
           {adjustTarget && (
             <Text style={s.modalSub}>
-              {adjustTarget.customer_name} · now {formatRM(adjustTarget.final_price_sen)}
+              {adjustTarget.customer_name} · now {formatRM(adjustTarget.final_price_sen ?? 0)}
             </Text>
           )}
 
@@ -640,6 +814,36 @@ const s = StyleSheet.create({
     letterSpacing: 0.2
   },
 
+  // Break controls
+  breakBtn: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    paddingVertical: 12,
+    alignItems: 'center'
+  },
+  breakBtnText: { color: colors.text, fontSize: 14, fontWeight: '600', letterSpacing: 0.2 },
+  breakBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    backgroundColor: colors.warnSoft,
+    borderWidth: 1,
+    borderColor: colors.warn,
+    borderRadius: radius.md,
+    padding: space.md
+  },
+  breakTitle: { color: colors.warn, fontSize: 14, fontWeight: '700', letterSpacing: 0.1 },
+  breakSub: { color: colors.muted, fontSize: 12, marginTop: 2 },
+  continueBtn: {
+    backgroundColor: colors.ok,
+    borderRadius: radius.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 9
+  },
+  continueBtnText: { color: colors.primaryText, fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
+
   // Currently serving panel
   currentCard: {
     backgroundColor: colors.surface,
@@ -764,6 +968,29 @@ const s = StyleSheet.create({
     alignItems: 'center'
   },
   adjustBtnText: { color: colors.text, fontSize: 13, fontWeight: '600', letterSpacing: 0.2 },
+
+  // Custom-service price entry
+  customPriceRow: { flexDirection: 'row', gap: space.sm, marginTop: space.md },
+  customPriceInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.bg,
+    paddingHorizontal: space.md,
+    paddingVertical: 11,
+    fontSize: 16,
+    color: colors.text
+  },
+  setPriceBtn: {
+    backgroundColor: colors.ok,
+    borderRadius: radius.md,
+    paddingHorizontal: space.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 96
+  },
+  setPriceBtnText: { color: colors.primaryText, fontSize: 14, fontWeight: '700', letterSpacing: 0.2 },
 
   // Price adjustment modal
   modalOverlay: {

@@ -36,7 +36,16 @@ export const colors = {
   dangerSoft: '#FCEBEA',
 
   // chat brand (kept literal so receipt buttons stay recognizable)
-  whatsapp: '#25D366'
+  whatsapp: '#25D366',
+
+  // Premium brand accents — the dark/cream/gold used on the PDF header and the
+  // logo mark. Used sparingly for hero panels and data-viz highlights.
+  ink: '#0F0E0C', // near-black hero surface
+  inkSoft: '#1C1A17', // raised element on ink
+  cream: '#E8DDC9', // text on ink
+  accent: '#B89865', // brand gold
+  accentDeep: '#94703F', // deeper gold for emphasis
+  accentSoft: '#F4ECDD' // gold tint fill on light surfaces
 } as const;
 
 // Modern admin: soft, consistent rounding.
@@ -80,3 +89,40 @@ export const brand = {
   name: 'Novyx Barbershop',
   short: 'Novyx'
 };
+
+// Modern admin-dashboard palette. Independent of the customer-facing gold/ink
+// brand — used for the analytics dashboard's cards and charts.
+export const dash = {
+  bg: '#F4F5F7',
+  card: '#FFFFFF',
+  border: '#ECEEF1',
+  text: '#0F172A',
+  muted: '#64748B',
+  subtle: '#94A3B8',
+  track: '#EEF0F3',
+
+  primary: '#6366F1',
+  primaryDeep: '#4F46E5',
+  violet: '#8B5CF6',
+  emerald: '#10B981',
+  amber: '#F59E0B',
+  sky: '#0EA5E9',
+  rose: '#F43F5E',
+
+  primarySoft: '#EEF0FE',
+  emeraldSoft: '#E7F8F1',
+  amberSoft: '#FEF4E6',
+  skySoft: '#E6F6FD',
+  roseSoft: '#FEECEF',
+  violetSoft: '#F1ECFE'
+} as const;
+
+// Ordered palette for multi-series charts (donut slices, etc.).
+export const chartPalette = [
+  '#6366F1',
+  '#10B981',
+  '#F59E0B',
+  '#0EA5E9',
+  '#F43F5E',
+  '#8B5CF6'
+];

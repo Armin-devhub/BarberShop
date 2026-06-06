@@ -16,7 +16,11 @@ import { supabase } from '@/lib/supabase';
 import { formatRM, type EmploymentType, type ShopSettings } from '@/lib/types';
 import { brand, cardShadow, colors, pageHeader, radius, space } from '@/lib/theme';
 import { REPORT_LOGO_DATA_URI } from '@/lib/report-logo';
-import { fetchTodaySummary, type TodaySummary } from '@/lib/today';
+import {
+  computeYearAttendance,
+  formatHM,
+  type BarberYearAttendance
+} from '@/lib/attendance';
 
 // ---------- shared data layer ----------
 
@@ -26,10 +30,14 @@ interface BarberStat {
   employment_type: EmploymentType;
   entries: number; // all queue entries (any status)
   cuts: number; // completed ('done') entries
-  commission: number; // commission earned, in sen
+  revenue: number; // sen, 100% of what customers paid for this barber's cuts
+  commission: number; // commission accrued ("should be paid"), in sen
+  commissionPaid: number; // commission from months ticked Paid, in sen
+  baseSalaryOwed: number; // base × months elapsed (full-time only), in sen
+  baseSalaryPaid: number; // base × months ticked Paid (full-time only), in sen
+  profit: number; // net profit to shop = revenue − commission owed − base owed, in sen
   paidMonths: number;
-  baseSalaryTotal: number; // base salary paid (full-time only), in sen
-  total: number; // commission + base salary, in sen
+  total: number; // what the barber earned = commission owed + base owed, in sen
 }
 
 interface YearReport {
@@ -37,13 +45,18 @@ interface YearReport {
   totals: {
     customers: number; // completed cuts shop-wide
     revenue: number; // sen, from done entries
-    commissions: number; // sen
+    commissions: number; // sen, accrued ("should be paid")
+    commissionsPaid: number; // sen, from months ticked Paid
+    baseSalaryOwed: number; // sen, base × months elapsed (full-time)
+    baseSalaryPaid: number; // sen, base × months ticked Paid (full-time)
+    profit: number; // sen, net = revenue − commissions owed − base owed
     queueCount: number;
     earningsCount: number;
     shiftsCount: number;
     salaryCount: number;
   };
   perBarber: BarberStat[];
+  attendance: BarberYearAttendance[];
   queue: any[];
   earnings: any[];
   shifts: any[];
@@ -75,9 +88,17 @@ async function fetchYearReport(year: number): Promise<YearReport> {
   const startDate = start.slice(0, 10);
   const endDate = end.slice(0, 10);
 
-  const [staffRes, settingsRes, queueRes, earningsRes, shiftsRes, paymentsRes] =
-    await Promise.all([
-      supabase.from('staff').select('id, name, employment_type, role, active'),
+  const [
+    staffRes,
+    settingsRes,
+    queueRes,
+    earningsRes,
+    shiftsRes,
+    paymentsRes,
+    overridesRes,
+    breaksRes
+  ] = await Promise.all([
+      supabase.from('staff').select('id, name, employment_type, role, active, base_salary_sen'),
       supabase.from('shop_settings').select('*').eq('id', 1).maybeSingle(),
       supabase
         .from('queue_entries')
@@ -105,7 +126,16 @@ async function fetchYearReport(year: number): Promise<YearReport> {
         .from('salary_payments')
         .select('staff_id, period_year, period_month, paid, paid_at, paid_amount_sen')
         .eq('period_year', year)
-        .order('period_month')
+        .order('period_month'),
+      supabase
+        .from('salary_overrides')
+        .select('staff_id, period_month, base_sen')
+        .eq('period_year', year),
+      supabase
+        .from('breaks')
+        .select('staff_id, started_at, ended_at')
+        .gte('started_at', start)
+        .lt('started_at', end)
     ]);
 
   const staff: Array<{
@@ -114,12 +144,18 @@ async function fetchYearReport(year: number): Promise<YearReport> {
     employment_type: EmploymentType;
     role: string;
     active: boolean;
+    base_salary_sen: number | null;
   }> = staffRes.data ?? [];
   const settings = (settingsRes.data as ShopSettings | null) ?? null;
   const queue = (queueRes.data ?? []) as any[];
   const earnings = (earningsRes.data ?? []) as any[];
   const shifts = (shiftsRes.data ?? []) as any[];
   const payments = (paymentsRes.data ?? []) as any[];
+  const overrides = (overridesRes.data ?? []) as Array<{
+    staff_id: string;
+    period_month: number;
+    base_sen: number;
+  }>;
 
   const staffById = new Map(staff.map((st) => [st.id, { name: st.name }]));
 
@@ -129,32 +165,98 @@ async function fetchYearReport(year: number): Promise<YearReport> {
   const totalCustomers = queue.filter((q) => q.status === 'done').length;
   const totalCommissions = earnings.reduce((s, e) => s + e.amount_sen, 0);
 
-  const baseSalary = settings?.full_time_base_salary_sen ?? 0;
+  // Which (barber, month) pairs were actually marked Paid. A commission counts as
+  // "paid" only if its earned month is ticked for that barber — so May-paid /
+  // June-unpaid no longer lump together.
+  const paidKey = (staffId: string, month: number) => `${staffId}|${month}`;
+  const paidMonthsSet = new Set(
+    payments.filter((p) => p.paid).map((p) => paidKey(p.staff_id, p.period_month))
+  );
+  const earningMonth = (e: any) => new Date(e.earned_at).getUTCMonth() + 1;
+  const isEarningPaid = (e: any) => paidMonthsSet.has(paidKey(e.staff_id, earningMonth(e)));
+  const totalCommissionsPaid = earnings
+    .filter(isEarningPaid)
+    .reduce((s, e) => s + e.amount_sen, 0);
+
+  // Owed base salary for a (barber, month):
+  //   override.base_sen        if an override row exists for that month, else
+  //   standard base            if full-time AND started >=1 shift that month, else
+  //   0
+  // standard base = staff.base_salary_sen ?? shop default.
+  const shopDefaultBase = settings?.full_time_base_salary_sen ?? 0;
+  const overrideMap = new Map<string, number>(); // `${staff}|${month}` -> base_sen
+  for (const o of overrides) overrideMap.set(`${o.staff_id}|${o.period_month}`, o.base_sen);
+  const workedMonths = new Set<string>(); // `${staff}|${month}`, month = UTC month of a shift start
+  for (const sh of shifts) {
+    workedMonths.add(`${sh.staff_id}|${new Date(sh.started_at).getUTCMonth() + 1}`);
+  }
+  const baseForMonth = (
+    st: { id: string; employment_type: EmploymentType; base_salary_sen: number | null },
+    month: number
+  ): number => {
+    if (st.employment_type !== 'full_time') return 0;
+    const key = `${st.id}|${month}`;
+    if (overrideMap.has(key)) return overrideMap.get(key)!;
+    if (workedMonths.has(key)) return st.base_salary_sen ?? shopDefaultBase;
+    return 0;
+  };
+
   const perBarber: BarberStat[] = staff
     .filter((st) => st.role === 'barber')
     .map((st) => {
       const mine = queue.filter((q) => q.staff_id === st.id);
       const cuts = mine.filter((q) => q.status === 'done').length;
-      const commission = earnings
-        .filter((e) => e.staff_id === st.id)
+      const revenue = mine
+        .filter((q) => q.status === 'done')
+        .reduce((s, q) => s + (q.final_price_sen ?? 0), 0);
+      const myEarnings = earnings.filter((e) => e.staff_id === st.id);
+      const commission = myEarnings.reduce((s, e) => s + e.amount_sen, 0);
+      const commissionPaid = myEarnings
+        .filter(isEarningPaid)
         .reduce((s, e) => s + e.amount_sen, 0);
       const paidMonths = payments.filter((p) => p.staff_id === st.id && p.paid).length;
-      const baseSalaryTotal =
-        st.employment_type === 'full_time' ? baseSalary * paidMonths : 0;
+      // Sum owed base over all 12 months (non-worked, non-override months are 0);
+      // paid base sums the same per-month value only over months ticked Paid.
+      let baseSalaryOwed = 0;
+      let baseSalaryPaid = 0;
+      for (let m = 1; m <= 12; m++) {
+        const b = baseForMonth(st, m);
+        baseSalaryOwed += b;
+        if (paidMonthsSet.has(paidKey(st.id, m))) baseSalaryPaid += b;
+      }
       return {
         id: st.id,
         name: st.name,
         employment_type: st.employment_type,
         entries: mine.length,
         cuts,
+        revenue,
         commission,
+        commissionPaid,
+        baseSalaryOwed,
+        baseSalaryPaid,
+        profit: revenue - commission - baseSalaryOwed,
         paidMonths,
-        baseSalaryTotal,
-        total: commission + baseSalaryTotal
+        total: commission + baseSalaryOwed
       };
     })
     // Busiest / highest-earning barbers first.
     .sort((a, b) => b.total - a.total || b.cuts - a.cuts);
+
+  const totalBaseOwed = perBarber.reduce((s, b) => s + b.baseSalaryOwed, 0);
+  const totalBasePaid = perBarber.reduce((s, b) => s + b.baseSalaryPaid, 0);
+
+  const breaksData = (breaksRes.data ?? []) as Array<{
+    staff_id: string;
+    started_at: string | null;
+    ended_at: string | null;
+  }>;
+  const attendance = computeYearAttendance(
+    staff.filter((st) => st.role === 'barber').map((st) => ({ id: st.id, name: st.name })),
+    shifts as Array<{ staff_id: string; started_at: string; ended_at: string | null }>,
+    breaksData,
+    queue as Array<{ staff_id: string; queue_date: string; status: string }>
+  );
 
   return {
     year,
@@ -162,12 +264,17 @@ async function fetchYearReport(year: number): Promise<YearReport> {
       customers: totalCustomers,
       revenue: totalRevenue,
       commissions: totalCommissions,
+      commissionsPaid: totalCommissionsPaid,
+      baseSalaryOwed: totalBaseOwed,
+      baseSalaryPaid: totalBasePaid,
+      profit: totalRevenue - totalCommissions - totalBaseOwed,
       queueCount: queue.length,
       earningsCount: earnings.length,
       shiftsCount: shifts.length,
       salaryCount: payments.length
     },
     perBarber,
+    attendance,
     queue,
     earnings,
     shifts,
@@ -180,7 +287,6 @@ export default function AdminReports() {
   const thisYear = new Date().getUTCFullYear();
   const [year, setYear] = useState(thisYear);
   const [report, setReport] = useState<YearReport | null>(null);
-  const [today, setToday] = useState<TodaySummary | null>(null);
   const [generating, setGenerating] = useState(false);
   const [archiving, setArchiving] = useState(false);
 
@@ -198,14 +304,6 @@ export default function AdminReports() {
   useEffect(() => {
     loadReport(year);
   }, [year, loadReport]);
-
-  // Live "today so far" snapshot — shown on screen, deliberately excluded from
-  // the PDF (the PDF is the annual record).
-  useEffect(() => {
-    fetchTodaySummary()
-      .then(setToday)
-      .catch(() => {});
-  }, []);
 
   async function handleGeneratePdf() {
     if (!report) return;
@@ -290,29 +388,6 @@ export default function AdminReports() {
         <Text style={pageHeader.title}>Export & archive</Text>
       </View>
 
-      {/* Live "today so far" snapshot — not part of the PDF export. */}
-      <View style={s.card}>
-        <Text style={s.cardTitle}>Today so far</Text>
-        {today === null ? (
-          <ActivityIndicator color={colors.muted} />
-        ) : (
-          <>
-            <View style={s.row}>
-              <Text style={s.rowLabel}>Revenue</Text>
-              <Text style={s.rowValue}>{formatRM(today.revenue_sen)}</Text>
-            </View>
-            <View style={s.row}>
-              <Text style={s.rowLabel}>Customers served</Text>
-              <Text style={s.rowValue}>{today.customersServed.toLocaleString()}</Text>
-            </View>
-            <View style={s.row}>
-              <Text style={s.rowLabelMuted}>In queue now</Text>
-              <Text style={s.rowValueMuted}>{today.inQueue.toLocaleString()}</Text>
-            </View>
-          </>
-        )}
-      </View>
-
       <View style={s.yearBar}>
         <Pressable hitSlop={8} onPress={() => setYear((y) => y - 1)} style={s.arrow}>
           <Ionicons name="chevron-back" size={20} color={colors.text} />
@@ -343,8 +418,28 @@ export default function AdminReports() {
               <Text style={s.rowValue}>{formatRM(totals!.revenue)}</Text>
             </View>
             <View style={s.row}>
-              <Text style={s.rowLabel}>Commissions paid</Text>
+              <Text style={s.rowLabelProfit}>Net profit</Text>
+              <Text style={[s.rowValueProfit, totals!.profit < 0 && s.negative]}>
+                {formatRM(totals!.profit)}
+              </Text>
+            </View>
+            <Text style={s.formulaHint}>Revenue − commission owed − base salary owed</Text>
+            <View style={s.divider} />
+            <View style={s.row}>
+              <Text style={s.rowLabel}>Commission should be paid</Text>
               <Text style={s.rowValue}>{formatRM(totals!.commissions)}</Text>
+            </View>
+            <View style={s.row}>
+              <Text style={s.rowLabel}>Commission paid</Text>
+              <Text style={s.rowValue}>{formatRM(totals!.commissionsPaid)}</Text>
+            </View>
+            <View style={s.row}>
+              <Text style={s.rowLabel}>Salary should be paid</Text>
+              <Text style={s.rowValue}>{formatRM(totals!.baseSalaryOwed)}</Text>
+            </View>
+            <View style={s.row}>
+              <Text style={s.rowLabel}>Salary paid</Text>
+              <Text style={s.rowValue}>{formatRM(totals!.baseSalaryPaid)}</Text>
             </View>
             <View style={s.divider} />
             <View style={s.row}>
@@ -389,18 +484,38 @@ export default function AdminReports() {
               {b.cuts === 1 ? 'cut' : 'cuts'}
             </Text>
             <View style={s.bRow}>
-              <Text style={s.bRowLabel}>Commission</Text>
+              <Text style={s.bRowLabel}>Revenue</Text>
+              <Text style={s.bRowValue}>{formatRM(b.revenue)}</Text>
+            </View>
+            <View style={s.bRow}>
+              <Text style={s.bRowLabel}>Commission should be paid</Text>
               <Text style={s.bRowValue}>{formatRM(b.commission)}</Text>
             </View>
+            <View style={s.bRow}>
+              <Text style={s.bRowLabel}>Commission paid</Text>
+              <Text style={s.bRowValue}>{formatRM(b.commissionPaid)}</Text>
+            </View>
             {b.employment_type === 'full_time' && (
-              <View style={s.bRow}>
-                <Text style={s.bRowLabel}>Base salary</Text>
-                <Text style={s.bRowValue}>{formatRM(b.baseSalaryTotal)}</Text>
-              </View>
+              <>
+                <View style={s.bRow}>
+                  <Text style={s.bRowLabel}>Salary should be paid</Text>
+                  <Text style={s.bRowValue}>{formatRM(b.baseSalaryOwed)}</Text>
+                </View>
+                <View style={s.bRow}>
+                  <Text style={s.bRowLabel}>Salary paid</Text>
+                  <Text style={s.bRowValue}>{formatRM(b.baseSalaryPaid)}</Text>
+                </View>
+              </>
             )}
+            <View style={s.bRow}>
+              <Text style={s.bRowLabel}>Barber earned (comm. + base)</Text>
+              <Text style={s.bRowValue}>{formatRM(b.total)}</Text>
+            </View>
             <View style={[s.bRow, s.bRowGrand]}>
-              <Text style={s.bRowLabelGrand}>Total earned</Text>
-              <Text style={s.bRowValueGrand}>{formatRM(b.total)}</Text>
+              <Text style={s.bRowLabelGrand}>Net profit</Text>
+              <Text style={[s.bRowValueGrand, b.profit < 0 ? s.negative : s.positive]}>
+                {formatRM(b.profit)}
+              </Text>
             </View>
           </View>
         ))
@@ -486,49 +601,125 @@ function printHtmlOnWeb(html: string): void {
 // ---------- PDF report builder ----------
 
 function buildReportHtml(report: YearReport): string {
-  const { year, totals, perBarber, queue, shifts, payments, staffById } = report;
+  const { year, totals, perBarber, attendance, queue, shifts, payments, staffById } = report;
+
+  // Attendance — one sub-table per barber, a row per month they worked.
+  const attendanceSections = attendance
+    .map((b) => {
+      const rows = b.months
+        .map(
+          (m) => `
+        <tr>
+          <td>${esc(m.label)}</td>
+          <td class="right">${m.daysWorked}</td>
+          <td class="right">${esc(formatHM(m.netSeconds))}</td>
+          <td class="right">${esc(formatHM(m.breakSeconds))}</td>
+          <td class="right">${m.customers}</td>
+        </tr>`
+        )
+        .join('');
+      return `
+      <h3>${esc(b.name)} · ${b.totalDaysWorked} ${b.totalDaysWorked === 1 ? 'day' : 'days'} · ${esc(formatHM(b.totalNetSeconds))} worked</h3>
+      <table>
+        <thead>
+          <tr><th>Month</th><th class="right">Days</th><th class="right">Net worked</th>
+              <th class="right">Breaks</th><th class="right">Customers</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    })
+    .join('');
 
   const barberRows = perBarber
     .map(
       (b) => `
       <tr>
         <td>${esc(b.name)}</td>
-        <td>${b.employment_type === 'full_time' ? 'Full-time' : 'Commission'}</td>
-        <td class="right">${b.entries}</td>
         <td class="right">${b.cuts}</td>
+        <td class="right">${esc(formatRM(b.revenue))}</td>
         <td class="right">${esc(formatRM(b.commission))}</td>
-        <td class="right">${esc(formatRM(b.baseSalaryTotal))}</td>
-        <td class="right strong">${esc(formatRM(b.total))}</td>
+        <td class="right">${esc(formatRM(b.commissionPaid))}</td>
+        <td class="right">${esc(formatRM(b.baseSalaryOwed))}</td>
+        <td class="right">${esc(formatRM(b.baseSalaryPaid))}</td>
+        <td class="right strong${b.profit < 0 ? ' neg' : ''}">${esc(formatRM(b.profit))}</td>
       </tr>`
     )
     .join('');
 
-  const queueRows = queue
-    .map(
-      (q) => `
-      <tr>
-        <td>${esc(q.queue_date)}</td>
-        <td>${esc(q.customer_name)}</td>
-        <td>${esc(staffById.get(q.staff_id)?.name ?? '—')}</td>
-        <td>${esc(q.services?.name ?? '—')}</td>
-        <td class="right">${esc(formatRM(q.final_price_sen))}</td>
-        <td>${esc(q.status)}</td>
-      </tr>`
-    )
-    .join('');
+  // Group a list into [monthKey, items] pairs sorted chronologically. monthKey
+  // is year*12 + monthIndex so it sorts naturally across year boundaries.
+  const monthKeyOf = (iso: string) => {
+    const d = new Date(iso);
+    return d.getUTCFullYear() * 12 + d.getUTCMonth();
+  };
+  const monthTitle = (key: number) =>
+    new Date(Date.UTC(Math.floor(key / 12), key % 12, 1)).toLocaleDateString(undefined, {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC'
+    });
+  function groupByMonth<T>(items: T[], getIso: (t: T) => string): Array<[number, T[]]> {
+    const map = new Map<number, T[]>();
+    for (const it of items) {
+      const key = monthKeyOf(getIso(it));
+      (map.get(key) ?? map.set(key, []).get(key)!).push(it);
+    }
+    return [...map.entries()].sort((a, b) => a[0] - b[0]);
+  }
 
-  const shiftRows = shifts
-    .map((sh) => {
-      const startD = new Date(sh.started_at);
-      const endD = sh.ended_at ? new Date(sh.ended_at) : null;
-      const minutes = endD ? Math.round((endD.getTime() - startD.getTime()) / 60000) : 0;
-      return `
+  // Shifts — one sub-table per month so a full year isn't one giant block.
+  const shiftSections = groupByMonth(shifts, (sh) => sh.started_at)
+    .map(([key, items]) => {
+      const rows = items
+        .map((sh) => {
+          const startD = new Date(sh.started_at);
+          const endD = sh.ended_at ? new Date(sh.ended_at) : null;
+          const minutes = endD ? Math.round((endD.getTime() - startD.getTime()) / 60000) : 0;
+          return `
         <tr>
           <td>${esc(staffById.get(sh.staff_id)?.name ?? '—')}</td>
           <td>${esc(startD.toLocaleString())}</td>
           <td>${esc(endD ? endD.toLocaleString() : 'still on shift')}</td>
           <td class="right">${minutes > 0 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : '—'}</td>
         </tr>`;
+        })
+        .join('');
+      return `
+      <h3>${esc(monthTitle(key))} · ${items.length} ${items.length === 1 ? 'shift' : 'shifts'}</h3>
+      <table>
+        <thead>
+          <tr><th>Barber</th><th>Start</th><th>End</th><th class="right">Duration</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    })
+    .join('');
+
+  // Queue entries — also split per month.
+  const queueSections = groupByMonth(queue, (q) => q.queue_date)
+    .map(([key, items]) => {
+      const rows = items
+        .map(
+          (q) => `
+        <tr>
+          <td>${esc(q.queue_date)}</td>
+          <td>${esc(q.customer_name)}</td>
+          <td>${esc(staffById.get(q.staff_id)?.name ?? '—')}</td>
+          <td>${esc(q.services?.name ?? 'Custom service')}</td>
+          <td class="right">${q.final_price_sen != null ? esc(formatRM(q.final_price_sen)) : '—'}</td>
+          <td>${esc(q.status)}</td>
+        </tr>`
+        )
+        .join('');
+      return `
+      <h3>${esc(monthTitle(key))} · ${items.length} ${items.length === 1 ? 'entry' : 'entries'}</h3>
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Customer</th><th>Barber</th><th>Service</th>
+              <th class="right">Price</th><th>Status</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
     })
     .join('');
 
@@ -580,15 +771,25 @@ function buildReportHtml(report: YearReport): string {
   .summary-card .label { font-size: 10px; color: #78716c; text-transform: uppercase;
                          letter-spacing: 1px; }
   .summary-card .value { font-size: 22px; font-weight: 800; margin-top: 4px; color: #1c1917; }
+  .summary-card.profit { border-color: #0E9F6E; background: #F0FAF5; }
+  .summary-card.profit .value { color: #0B7A54; }
+  .summary-card.profit.neg { border-color: #DC2626; background: #FDECEC; }
+  .summary-card.profit.neg .value { color: #B91C1C; }
+  td.neg { color: #B91C1C; }
+  .summary-card .sublabel { font-size: 9px; color: #78716c; margin-top: 4px; font-style: italic; }
 
   h2 { font-size: 15px; margin: 30px 0 8px; padding-bottom: 6px;
        border-bottom: 2px solid #B89865; color: #1c1917;
        text-transform: uppercase; letter-spacing: 1px; }
+  h3 { font-size: 12px; margin: 16px 0 6px; color: #57534e;
+       font-weight: 700; letter-spacing: 0.3px; }
+  .muted-note { color: #a8a29e; font-size: 11px; font-style: italic; }
   table { width: 100%; border-collapse: collapse; font-size: 11px; }
   th { text-align: left; font-size: 10px; color: #78716c;
        text-transform: uppercase; letter-spacing: 0.5px;
        padding: 6px 8px; border-bottom: 1px solid #e7e5e4; }
   td { padding: 6px 8px; border-bottom: 1px solid #f5f4f3; }
+  table.compact th, table.compact td { font-size: 9.5px; padding: 5px 6px; }
   tbody tr:nth-child(even) { background: #faf9f7; }
   .right { text-align: right; }
   .strong { font-weight: 700; color: #1c1917; }
@@ -614,29 +815,48 @@ function buildReportHtml(report: YearReport): string {
       <div class="label">Revenue</div>
       <div class="value">${esc(formatRM(totals.revenue))}</div>
     </div>
-    <div class="summary-card">
-      <div class="label">Commissions paid</div>
-      <div class="value">${esc(formatRM(totals.commissions))}</div>
+    <div class="summary-card profit ${totals.profit < 0 ? 'neg' : ''}">
+      <div class="label">Net profit</div>
+      <div class="value">${esc(formatRM(totals.profit))}</div>
+      <div class="sublabel">Revenue − commission owed − base salary owed</div>
     </div>
     <div class="summary-card">
       <div class="label">Shifts worked</div>
       <div class="value">${totals.shiftsCount.toLocaleString()}</div>
     </div>
+    <div class="summary-card">
+      <div class="label">Commission should be paid</div>
+      <div class="value">${esc(formatRM(totals.commissions))}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Commission paid</div>
+      <div class="value">${esc(formatRM(totals.commissionsPaid))}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Salary should be paid</div>
+      <div class="value">${esc(formatRM(totals.baseSalaryOwed))}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Salary paid</div>
+      <div class="value">${esc(formatRM(totals.baseSalaryPaid))}</div>
+    </div>
   </div>
 
   <h2>Per-barber breakdown</h2>
-  <table>
+  <table class="compact">
     <thead>
       <tr>
-        <th>Barber</th><th>Type</th>
-        <th class="right">Entries</th>
+        <th>Barber</th>
         <th class="right">Cuts</th>
-        <th class="right">Commission</th>
-        <th class="right">Base salary</th>
-        <th class="right">Total earned</th>
+        <th class="right">Revenue</th>
+        <th class="right">Comm. due</th>
+        <th class="right">Comm. paid</th>
+        <th class="right">Salary due</th>
+        <th class="right">Salary paid</th>
+        <th class="right">Net profit</th>
       </tr>
     </thead>
-    <tbody>${barberRows || '<tr><td colspan="7">No barbers.</td></tr>'}</tbody>
+    <tbody>${barberRows || '<tr><td colspan="8">No barbers.</td></tr>'}</tbody>
   </table>
 
   <h2>Salary payments (${payments.length})</h2>
@@ -647,22 +867,14 @@ function buildReportHtml(report: YearReport): string {
     <tbody>${paymentRows || '<tr><td colspan="4">No payments recorded.</td></tr>'}</tbody>
   </table>
 
+  <h2>Attendance</h2>
+  ${attendanceSections || '<p class="muted-note">No attendance recorded.</p>'}
+
   <h2>Shifts (${shifts.length})</h2>
-  <table>
-    <thead>
-      <tr><th>Barber</th><th>Start</th><th>End</th><th class="right">Duration</th></tr>
-    </thead>
-    <tbody>${shiftRows || '<tr><td colspan="4">No shifts.</td></tr>'}</tbody>
-  </table>
+  ${shiftSections || '<p class="muted-note">No shifts.</p>'}
 
   <h2>Queue entries (${queue.length})</h2>
-  <table>
-    <thead>
-      <tr><th>Date</th><th>Customer</th><th>Barber</th><th>Service</th>
-          <th class="right">Price</th><th>Status</th></tr>
-    </thead>
-    <tbody>${queueRows || '<tr><td colspan="6">No queue entries.</td></tr>'}</tbody>
-  </table>
+  ${queueSections || '<p class="muted-note">No queue entries.</p>'}
 
   <p class="footer">${esc(brand.name)} · Annual Report ${year} · generated ${esc(generatedAt)}</p>
 </body>
@@ -725,6 +937,11 @@ const s = StyleSheet.create({
   rowValue: { fontSize: 18, color: colors.text, fontWeight: '700' },
   rowLabelMuted: { fontSize: 12, color: colors.muted },
   rowValueMuted: { fontSize: 13, color: colors.muted, fontWeight: '600' },
+  rowLabelProfit: { fontSize: 13, color: colors.text, fontWeight: '700' },
+  rowValueProfit: { fontSize: 18, color: colors.ok, fontWeight: '800' },
+  negative: { color: colors.danger },
+  positive: { color: colors.ok },
+  formulaHint: { fontSize: 10, color: colors.subtle, fontStyle: 'italic', marginTop: -2 },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: 6 },
   empty: { fontSize: 13, color: colors.muted, paddingVertical: 6 },
 

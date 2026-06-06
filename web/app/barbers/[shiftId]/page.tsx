@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { getCustomer } from '@/lib/customer';
-import { setActiveEntryId, useActiveEntryRedirect } from '@/lib/active-entry';
+import { setActiveEntry, useActiveEntryRedirect } from '@/lib/active-entry';
 import {
   formatRM,
   type BarberShiftService,
@@ -13,12 +13,16 @@ import {
   type QueueEntry
 } from '@shared/types';
 
+// Sentinel for the "Custom Service" choice (no catalog service / price).
+const CUSTOM_SERVICE = '__custom__';
+
 export default function BarberServicesPage() {
   const router = useRouter();
   const { shiftId } = useParams<{ shiftId: string }>();
   const { checking } = useActiveEntryRedirect();
 
   const [services, setServices] = useState<BarberShiftService[] | null>(null);
+  const [barber, setBarber] = useState<{ staff_id: string; staff_name: string } | null>(null);
   const [error, setError] = useState('');
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [discountInput, setDiscountInput] = useState('');
@@ -27,15 +31,36 @@ export default function BarberServicesPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const customer = useMemo(() => (typeof window !== 'undefined' ? getCustomer() : null), []);
-  const staffName = services?.[0]?.staff_name ?? '';
-  const staffId = services?.[0]?.staff_id ?? '';
-  const selectedService = services?.find((s) => s.service_id === selectedServiceId) ?? null;
+  const isCustom = selectedServiceId === CUSTOM_SERVICE;
+  const selectedService = isCustom
+    ? null
+    : (services?.find((s) => s.service_id === selectedServiceId) ?? null);
+  const hasSelection = isCustom || !!selectedService;
+  // Prefer the on-shift barber record so Custom Service works even if the barber
+  // picked no catalog services today.
+  const staffName = barber?.staff_name ?? services?.[0]?.staff_name ?? '';
+  const staffId = barber?.staff_id ?? services?.[0]?.staff_id ?? '';
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !getCustomer()) {
       router.replace('/');
     }
   }, [router]);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('barbers_on_shift')
+      .select('staff_id, staff_name')
+      .eq('shift_id', shiftId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled && data) setBarber(data as { staff_id: string; staff_name: string });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [shiftId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +90,7 @@ export default function BarberServicesPage() {
     supabase
       .rpc('preview_discount', {
         p_code: discountInput.trim(),
-        p_service_id: selectedServiceId
+        p_service_id: isCustom ? null : selectedServiceId
       })
       .single<DiscountPreview>()
       .then(({ data, error }) => {
@@ -89,7 +114,7 @@ export default function BarberServicesPage() {
   }, [discountInput, selectedServiceId]);
 
   async function handleJoinQueue() {
-    if (!customer || !selectedService || !staffId) return;
+    if (!customer || !hasSelection || !staffId) return;
     setSubmitting(true);
     setError('');
     const { data, error } = await supabase
@@ -97,7 +122,7 @@ export default function BarberServicesPage() {
         p_staff_id: staffId,
         p_customer_name: customer.name,
         p_customer_phone: customer.phone,
-        p_service_id: selectedService.service_id,
+        p_service_id: isCustom ? null : selectedService!.service_id,
         p_discount_code: discountInput.trim() || null
       })
       .single<QueueEntry>();
@@ -108,7 +133,7 @@ export default function BarberServicesPage() {
       return;
     }
     if (data) {
-      setActiveEntryId(data.id);
+      setActiveEntry(data.id, data.cancel_token);
       router.push(`/queue/${data.id}`);
     }
   }
@@ -153,15 +178,43 @@ export default function BarberServicesPage() {
 
       {services === null && !error && <p className="text-novyx-muted">Loading services…</p>}
 
-      {services && services.length === 0 && !error && (
-        <p className="rounded-sm border border-novyx-border bg-novyx-surface p-4 italic text-novyx-muted">
-          This barber hasn't picked any services for today.
-        </p>
-      )}
-
-      {services && services.length > 0 && (
+      {services && !error && (
         <ul className="space-y-2.5">
-          {services.map((s, i) => {
+          {/* Custom Service — always available, no preset price. */}
+          <li>
+            <button
+              type="button"
+              onClick={() => setSelectedServiceId(CUSTOM_SERVICE)}
+              className={`flex w-full items-center rounded-sm border px-4 py-3.5 text-left bg-novyx-surface ${
+                isCustom ? 'border-novyx-gold border-2' : 'border-novyx-border hover:border-novyx-muted'
+              }`}
+            >
+              <span
+                className={`mr-3 flex h-5 w-5 items-center justify-center rounded-full border ${
+                  isCustom ? 'border-novyx-gold bg-novyx-gold text-novyx-bg' : 'border-novyx-border'
+                }`}
+              >
+                {isCustom && <span className="text-[10px] font-bold">✓</span>}
+              </span>
+              <span className="flex-1 space-y-0.5">
+                <span className="block font-serif text-lg italic text-novyx-cream">
+                  Custom Service
+                </span>
+                <span className="block text-[10px] font-bold tracking-[0.15em] text-novyx-gold">
+                  NOT SURE YET? YOUR BARBER DECIDES{isCustom ? ' · SELECTED' : ''}
+                </span>
+              </span>
+              <span
+                className={`text-[10px] font-bold tracking-[0.15em] ${
+                  isCustom ? 'text-novyx-gold' : 'text-novyx-muted'
+                }`}
+              >
+                BARBER SETS
+              </span>
+            </button>
+          </li>
+
+          {services.map((s) => {
             const isSelected = s.service_id === selectedServiceId;
             return (
               <li key={s.service_id}>
@@ -205,7 +258,7 @@ export default function BarberServicesPage() {
         </ul>
       )}
 
-      {selectedService && (
+      {hasSelection && (
         <section className="space-y-4 pt-2">
           <label className="block space-y-1.5">
             <span className="text-[10px] font-bold tracking-[0.15em] text-novyx-gold">
@@ -245,14 +298,26 @@ export default function BarberServicesPage() {
 
           <div className="flex items-baseline justify-between border-y border-novyx-border py-3">
             <span className="text-[10px] font-bold tracking-[0.2em] text-novyx-gold">TOTAL</span>
-            <span className="font-serif text-3xl italic text-novyx-cream">
-              {finalPrice != null ? formatRM(finalPrice) : '—'}
-            </span>
+            {isCustom ? (
+              <span className="text-sm italic text-novyx-muted">Set by your barber</span>
+            ) : (
+              <span className="font-serif text-3xl italic text-novyx-cream">
+                {finalPrice != null ? formatRM(finalPrice) : '—'}
+              </span>
+            )}
           </div>
+
+          {isCustom && (
+            <p className="-mt-2 text-[11px] italic text-novyx-muted">
+              {discountPreview?.valid
+                ? 'Your discount will apply to the price your barber sets.'
+                : 'Your barber will set the price when finishing your service.'}
+            </p>
+          )}
 
           <button
             type="button"
-            disabled={submitting || !selectedService || validating}
+            disabled={submitting || !hasSelection || validating}
             onClick={handleJoinQueue}
             className="block w-full rounded-sm bg-novyx-gold px-4 py-3.5 text-xs font-bold tracking-[0.2em] text-novyx-bg hover:bg-novyx-goldHi disabled:opacity-50"
           >

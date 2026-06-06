@@ -15,6 +15,7 @@ export interface Staff {
   role: StaffRole;
   employment_type: EmploymentType;
   active: boolean;
+  base_salary_sen: number | null; // full-time standard monthly base; null = shop default
   created_at: string;
 }
 
@@ -46,6 +47,14 @@ export interface SalaryPayment {
   updated_at: string;
 }
 
+export interface SalaryOverride {
+  staff_id: string;
+  period_year: number;
+  period_month: number;
+  base_sen: number;
+  updated_at: string;
+}
+
 export interface Service {
   id: string;
   name: string;
@@ -70,6 +79,16 @@ export interface Shift {
   ended_at: string | null;
 }
 
+export interface Break {
+  id: string;
+  staff_id: string;
+  shift_id: string | null;
+  requested_at: string;
+  started_at: string | null; // null until the queue clears (timer not started yet)
+  ended_at: string | null;
+  created_at: string;
+}
+
 export interface DiscountCode {
   id: string;
   code: string;
@@ -88,14 +107,16 @@ export interface QueueEntry {
   shift_id: string | null;
   customer_name: string;
   customer_phone: string;
-  service_id: string;
+  service_id: string | null; // null = custom service (barber sets price)
   discount_code_id: string | null;
+  discount_percent: number | null; // % to apply when a custom price is set
   queue_number: number;
   queue_date: string;
   status: QueueStatus;
-  base_price_sen: number;
-  final_price_sen: number;
+  base_price_sen: number | null; // null until a custom-service price is set
+  final_price_sen: number | null; // null until a custom-service price is set
   price_adjustment_sen: number;
+  cancel_token: string;
   created_at: string;
   started_at: string | null;
   completed_at: string | null;

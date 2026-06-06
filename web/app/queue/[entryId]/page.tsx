@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { clearActiveEntryId } from '@/lib/active-entry';
+import { clearActiveEntryId, getActiveEntryToken } from '@/lib/active-entry';
 import { formatRM, type PublicQueueEntry } from '@shared/types';
 
 interface QueueRow {
@@ -30,7 +30,10 @@ export default function QueuePage() {
   async function handleCancel() {
     if (!confirm('Cancel your spot in the queue?')) return;
     setCancelling(true);
-    const { error } = await supabase.rpc('cancel_queue_entry', { p_entry_id: entryId });
+    const { error } = await supabase.rpc('cancel_queue_entry', {
+      p_entry_id: entryId,
+      p_token: getActiveEntryToken()
+    });
     setCancelling(false);
     if (error) {
       setError(error.message);
@@ -120,9 +123,11 @@ export default function QueuePage() {
   const estMin = aheadOfMe * (me.services?.duration_minutes ?? 30);
 
   // Price breakdown: service + barber's adjustment = subtotal, then discount.
+  // For a Custom Service the price stays unset until the barber enters it.
+  const priceSet = me.base_price_sen != null && me.final_price_sen != null;
   const priceAdjustment = me.price_adjustment_sen ?? 0;
-  const subtotal = me.base_price_sen + priceAdjustment;
-  const discountSen = subtotal - me.final_price_sen;
+  const subtotal = priceSet ? me.base_price_sen! + priceAdjustment : 0;
+  const discountSen = priceSet ? subtotal - me.final_price_sen! : 0;
 
   return (
     <main className="space-y-5 pt-2">
@@ -195,22 +200,30 @@ export default function QueuePage() {
         <p className="text-[10px] font-bold tracking-[0.2em] text-novyx-gold">YOUR BOOKING</p>
         <div className="space-y-1.5 text-sm">
           <div className="flex justify-between">
-            <span className="font-serif italic text-novyx-cream">{me.services?.name ?? 'Service'}</span>
-            <span className="text-novyx-cream">{formatRM(me.base_price_sen)}</span>
+            <span className="font-serif italic text-novyx-cream">
+              {me.services?.name ?? 'Custom service'}
+            </span>
+            <span className="text-novyx-cream">
+              {priceSet ? (
+                formatRM(me.base_price_sen!)
+              ) : (
+                <span className="italic text-novyx-muted">Set by barber</span>
+              )}
+            </span>
           </div>
-          {priceAdjustment > 0 && (
+          {priceSet && priceAdjustment > 0 && (
             <div className="flex justify-between">
               <span className="text-novyx-subtle">Add-on</span>
               <span className="text-novyx-cream">+{formatRM(priceAdjustment)}</span>
             </div>
           )}
-          {priceAdjustment < 0 && (
+          {priceSet && priceAdjustment < 0 && (
             <div className="flex justify-between">
               <span className="text-novyx-subtle">Reduction</span>
               <span className="text-novyx-cream">−{formatRM(Math.abs(priceAdjustment))}</span>
             </div>
           )}
-          {discountSen > 0 && (
+          {priceSet && discountSen > 0 && (
             <div className="flex justify-between text-novyx-ok">
               <span>Discount</span>
               <span>−{formatRM(discountSen)}</span>
@@ -218,7 +231,9 @@ export default function QueuePage() {
           )}
           <div className="flex justify-between border-t border-novyx-border pt-1.5">
             <span className="text-novyx-subtle">Total</span>
-            <span className="font-semibold text-novyx-gold">{formatRM(me.final_price_sen)}</span>
+            <span className="font-semibold text-novyx-gold">
+              {priceSet ? formatRM(me.final_price_sen!) : '—'}
+            </span>
           </div>
         </div>
       </section>

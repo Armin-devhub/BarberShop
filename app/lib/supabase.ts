@@ -31,9 +31,17 @@ if (!CONTROL_URL || !CONTROL_KEY || !LIVE_URL || !LIVE_KEY) {
   );
 }
 
+// Operator secret — gates the destructive staff/control RPCs server-side. Lives
+// ONLY in the staff/admin app bundle (never the customer site). Sent as a header
+// on every request; the DB ignores it until the matching secret is configured.
+const OPERATOR_SECRET = process.env.EXPO_PUBLIC_OPERATOR_SECRET;
+
 // Admin login is intentionally NOT remembered (session in memory only).
 const AUTH_OPTS = {
-  auth: { autoRefreshToken: true, persistSession: false, detectSessionInUrl: false }
+  auth: { autoRefreshToken: true, persistSession: false, detectSessionInUrl: false },
+  ...(OPERATOR_SECRET
+    ? { global: { headers: { 'x-operator-secret': OPERATOR_SECRET } } }
+    : {})
 } as const;
 
 function makeClient(backend: Backend): SupabaseClient {

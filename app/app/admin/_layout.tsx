@@ -10,19 +10,42 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/auth';
 import { brand, colors, radius, space } from '@/lib/theme';
 
-const NAV = [
-  { label: 'Dashboard', path: '/admin' },
-  { label: 'Staff', path: '/admin/staff' },
-  { label: 'Services', path: '/admin/services' },
-  { label: 'Products', path: '/admin/products' },
-  { label: 'Discounts', path: '/admin/discounts' },
-  { label: 'Pay', path: '/admin/pay' },
-  { label: 'Reports', path: '/admin/reports' },
-  { label: 'Settings', path: '/admin/settings' }
-] as const;
+type IonName = keyof typeof Ionicons.glyphMap;
+type NavItem = { label: string; path: string; icon: IonName };
+
+const NAV_GROUPS: { heading: string; items: NavItem[] }[] = [
+  {
+    heading: 'OVERVIEW',
+    items: [{ label: 'Dashboard', path: '/admin', icon: 'grid-outline' }]
+  },
+  {
+    heading: 'CATALOG',
+    items: [
+      { label: 'Services', path: '/admin/services', icon: 'cut-outline' },
+      { label: 'Products', path: '/admin/products', icon: 'cube-outline' },
+      { label: 'Discounts', path: '/admin/discounts', icon: 'pricetag-outline' }
+    ]
+  },
+  {
+    heading: 'PEOPLE',
+    items: [
+      { label: 'Staff', path: '/admin/staff', icon: 'people-outline' },
+      { label: 'Attendance', path: '/admin/attendance', icon: 'calendar-outline' },
+      { label: 'Pay', path: '/admin/pay', icon: 'cash-outline' }
+    ]
+  },
+  {
+    heading: 'SYSTEM',
+    items: [
+      { label: 'Reports', path: '/admin/reports', icon: 'bar-chart-outline' },
+      { label: 'Settings', path: '/admin/settings', icon: 'settings-outline' }
+    ]
+  }
+];
 
 export default function AdminLayout() {
   const router = useRouter();
@@ -63,28 +86,60 @@ export default function AdminLayout() {
           </View>
 
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: space.sm }}>
-            {NAV.map((item) => {
-              // '/admin' is the dashboard index — match it exactly so it isn't
-              // highlighted for every nested admin route.
-              const active =
-                item.path === '/admin'
-                  ? pathname === '/admin'
-                  : pathname?.startsWith(item.path);
-              return (
-                <Pressable
-                  key={item.path}
-                  onPress={() => router.push(item.path)}
-                  style={[s.navItem, active && s.navItemActive]}
-                >
-                  <Text style={[s.navText, active && s.navTextActive]}>{item.label}</Text>
-                </Pressable>
-              );
-            })}
+            {NAV_GROUPS.map((group) => (
+              <View key={group.heading} style={s.navGroup}>
+                <Text style={s.navHeading}>{group.heading}</Text>
+                {group.items.map((item) => {
+                  // '/admin' is the dashboard index — match it exactly so it
+                  // isn't highlighted for every nested admin route.
+                  const active =
+                    item.path === '/admin'
+                      ? pathname === '/admin'
+                      : pathname?.startsWith(item.path);
+                  return (
+                    <Pressable
+                      key={item.path}
+                      onPress={() => router.push(item.path)}
+                      style={({ pressed }) => [
+                        s.navItem,
+                        active && s.navItemActive,
+                        pressed && !active && s.navItemPressed
+                      ]}
+                    >
+                      <Ionicons
+                        name={item.icon}
+                        size={18}
+                        color={active ? colors.accent : colors.muted}
+                        style={s.navIcon}
+                      />
+                      <Text style={[s.navText, active && s.navTextActive]}>{item.label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ))}
           </ScrollView>
 
-          <Pressable onPress={signOut} style={s.signOut}>
-            <Text style={s.signOutText}>SIGN OUT</Text>
-          </Pressable>
+          <View style={s.account}>
+            <View style={s.accountAvatar}>
+              <Text style={s.accountAvatarText}>
+                {staff.name.trim().charAt(0).toUpperCase() || 'A'}
+              </Text>
+            </View>
+            <View style={s.accountIdent}>
+              <Text style={s.accountName} numberOfLines={1}>
+                {staff.name}
+              </Text>
+              <Text style={s.accountRole}>Admin</Text>
+            </View>
+            <Pressable
+              onPress={signOut}
+              hitSlop={8}
+              style={({ pressed }) => [s.signOutBtn, pressed && s.signOutPressed]}
+            >
+              <Ionicons name="log-out-outline" size={18} color={colors.danger} />
+            </Pressable>
+          </View>
         </View>
 
         <View style={s.main}>
@@ -128,33 +183,73 @@ const s = StyleSheet.create({
     marginTop: space.md
   },
 
+  navGroup: { marginBottom: space.md },
+  navHeading: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.subtle,
+    letterSpacing: 1.2,
+    paddingHorizontal: space.md,
+    marginLeft: space.sm,
+    marginBottom: 4
+  },
+
   navItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     paddingVertical: 10,
     paddingHorizontal: space.md,
     marginHorizontal: space.sm,
+    marginBottom: 2,
     borderRadius: radius.sm,
     borderLeftWidth: 3,
     borderLeftColor: 'transparent'
   },
   navItemActive: {
-    backgroundColor: colors.okSoft,
-    borderLeftColor: colors.ok
+    backgroundColor: colors.accentSoft,
+    borderLeftColor: colors.accent
   },
+  navItemPressed: { backgroundColor: colors.surfaceAlt },
+  navIcon: { width: 18, textAlign: 'center' },
   navText: { fontSize: 14, color: colors.muted, fontWeight: '500' },
   navTextActive: { color: colors.text, fontWeight: '600' },
 
-  signOut: {
+  account: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
     paddingHorizontal: space.md,
     paddingVertical: space.md,
     borderTopWidth: 1,
     borderTopColor: colors.border
   },
-  signOutText: {
-    fontSize: 13,
-    color: colors.danger,
-    fontWeight: '600',
-    letterSpacing: 0.2
+  accountAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 999,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
+  accountAvatarText: { fontSize: 14, fontWeight: '700', color: colors.accentDeep },
+  accountIdent: { flex: 1, minWidth: 0 },
+  accountName: { fontSize: 13, fontWeight: '700', color: colors.text, letterSpacing: -0.1 },
+  accountRole: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: colors.muted,
+    letterSpacing: 1,
+    marginTop: 1
+  },
+  signOutBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  signOutPressed: { backgroundColor: colors.dangerSoft },
 
   main: { flex: 1, backgroundColor: colors.bg }
 });

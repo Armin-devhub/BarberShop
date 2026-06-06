@@ -12,6 +12,7 @@ export interface Staff {
   phone: string;
   role: StaffRole;
   active: boolean;
+  base_salary_sen: number | null; // full-time standard monthly base; null = shop default
   created_at: string;
 }
 
@@ -29,6 +30,16 @@ export interface Shift {
   staff_id: string;
   started_at: string;
   ended_at: string | null;
+}
+
+export interface Break {
+  id: string;
+  staff_id: string;
+  shift_id: string | null;
+  requested_at: string;
+  started_at: string | null;
+  ended_at: string | null;
+  created_at: string;
 }
 
 export interface ShiftService {
@@ -54,21 +65,27 @@ export interface QueueEntry {
   shift_id: string | null;
   customer_name: string;
   customer_phone: string;
-  service_id: string;
+  service_id: string | null; // null = custom service (barber sets price)
   discount_code_id: string | null;
+  discount_percent: number | null; // % to apply when a custom price is set
   queue_number: number;
   queue_date: string;
   status: QueueStatus;
-  base_price_sen: number;
-  final_price_sen: number;
+  base_price_sen: number | null; // null until a custom-service price is set
+  final_price_sen: number | null; // null until a custom-service price is set
   price_adjustment_sen: number;
+  cancel_token: string; // proof-of-ownership for customer cancel; not API-readable
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
 }
 
-// Shape returned to anon clients (customer_phone and discount_code_id revoked).
-export type PublicQueueEntry = Omit<QueueEntry, 'customer_phone' | 'discount_code_id'>;
+// Shape readable by anon clients (phone, discount_code_id and cancel_token are
+// not exposed over the API — cancel_token is only delivered in create's result).
+export type PublicQueueEntry = Omit<
+  QueueEntry,
+  'customer_phone' | 'discount_code_id' | 'cancel_token'
+>;
 
 export interface BarberOnShift {
   shift_id: string;

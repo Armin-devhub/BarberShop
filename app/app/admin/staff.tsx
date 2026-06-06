@@ -12,6 +12,7 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import type { EmploymentType, Staff, StaffRole } from '@/lib/types';
 import { cardShadow, colors, pageHeader, radius, space } from '@/lib/theme';
@@ -29,7 +30,18 @@ type EditableStaff = Partial<Staff> & {
 export default function AdminStaff() {
   const [list, setList] = useState<Staff[] | null>(null);
   const [editing, setEditing] = useState<EditableStaff | null>(null);
+  const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  function open(next: EditableStaff) {
+    setEditing(next);
+    setVisible(true);
+  }
+  // Hide first; keep `editing` so the modal keeps its content while it
+  // animates closed (otherwise it flashes the empty "Add" state).
+  function close() {
+    setVisible(false);
+  }
 
   async function load() {
     const { data, error } = await supabase.from('staff').select('*').order('name');
@@ -83,7 +95,7 @@ export default function AdminStaff() {
         Alert.alert('Error', msg);
         return;
       }
-      setEditing(null);
+      close();
       load();
       return;
     }
@@ -111,7 +123,7 @@ export default function AdminStaff() {
       Alert.alert('Error', error.message);
       return;
     }
-    setEditing(null);
+    close();
     load();
   }
 
@@ -126,73 +138,127 @@ export default function AdminStaff() {
   return (
     <View style={s.flex}>
       <ScrollView contentContainerStyle={s.scrollContent}>
-        <View style={pageHeader.wrap}>
-          <Text style={pageHeader.subtitle}>Staff · {list.length} total</Text>
-          <Text style={pageHeader.title}>Manage barbers</Text>
+        <View style={s.headerRow}>
+          <View style={pageHeader.wrap}>
+            <Text style={pageHeader.subtitle}>Staff · {list.length} total</Text>
+            <Text style={pageHeader.title}>Manage barbers</Text>
+          </View>
+          <Pressable
+            style={({ pressed }) => [s.addBtnSm, pressed && s.addBtnPressed]}
+            onPress={() => open({ name: '', phone: '', email: '', role: 'barber', active: true })}
+          >
+            <Ionicons name="add" size={18} color={colors.primaryText} />
+            <Text style={s.addBtnText}>Add</Text>
+          </Pressable>
         </View>
 
-        <Pressable
-          style={s.addBtn}
-          onPress={() =>
-            setEditing({ name: '', phone: '', email: '', role: 'barber', active: true })
-          }
-        >
-          <Text style={s.addBtnText}>+ Add staff</Text>
-        </Pressable>
-
-        {list.length === 0 && (
-          <Text style={s.muted}>No staff yet. Tap "Add staff" to create the first one.</Text>
+        {list.length === 0 ? (
+          <View style={s.empty}>
+            <View style={s.emptyIcon}>
+              <Ionicons name="people-outline" size={26} color={colors.subtle} />
+            </View>
+            <Text style={s.emptyTitle}>No staff yet</Text>
+            <Text style={s.emptyText}>Add your first barber or admin to get started.</Text>
+            <Pressable
+              style={({ pressed }) => [s.emptyBtn, pressed && s.addBtnPressed]}
+              onPress={() => open({ name: '', phone: '', email: '', role: 'barber', active: true })}
+            >
+              <Ionicons name="add" size={18} color={colors.primaryText} />
+              <Text style={s.addBtnText}>Add staff</Text>
+            </Pressable>
+          </View>
+        ) : (
+          list.map((st) => {
+            const noLogin = st.role === 'admin' && !st.auth_user_id;
+            return (
+              <Pressable
+                key={st.id}
+                onPress={() => open({ ...st, email: st.email ?? undefined })}
+                style={({ pressed }) => [s.row, !st.active && s.rowInactive, pressed && s.rowPressed]}
+              >
+                <View style={[s.avatar, st.role === 'admin' && s.avatarAdmin]}>
+                  <Text style={[s.avatarText, st.role === 'admin' && s.avatarTextAdmin]}>
+                    {st.name.trim().charAt(0).toUpperCase() || '?'}
+                  </Text>
+                </View>
+                <View style={s.rowMid}>
+                  <View style={s.nameRow}>
+                    <Text style={s.name} numberOfLines={1}>
+                      {st.name}
+                    </Text>
+                    <Text style={st.role === 'admin' ? s.roleAdmin : s.roleBarber}>
+                      {st.role === 'admin' ? 'Admin' : 'Barber'}
+                    </Text>
+                    {!st.active && <Text style={s.badgeRed}>Inactive</Text>}
+                  </View>
+                  <Text style={s.email} numberOfLines={1}>
+                    {st.email ?? '—'} · {st.phone}
+                  </Text>
+                  <View style={s.subRow}>
+                    <Text style={s.empType}>
+                      {(st.employment_type ?? 'commission') === 'full_time'
+                        ? 'Full-time'
+                        : 'Commission'}
+                    </Text>
+                    {noLogin && (
+                      <>
+                        <Text style={s.subDot}>·</Text>
+                        <Text style={s.noLogin}>No login</Text>
+                      </>
+                    )}
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.subtle} />
+              </Pressable>
+            );
+          })
         )}
-
-        {list.map((st) => (
-          <Pressable
-            key={st.id}
-            onPress={() => setEditing({ ...st, email: st.email ?? undefined })}
-            style={s.row}
-          >
-            <View style={{ flex: 1 }}>
-              <View style={s.nameRow}>
-                <Text style={s.name}>{st.name}</Text>
-                <Text style={st.role === 'admin' ? s.roleAdmin : s.roleBarber}>
-                  {st.role === 'admin' ? 'Admin' : 'Barber'}
-                </Text>
-              </View>
-              <Text style={s.email}>
-                {st.email ?? '—'} · {st.phone}
-              </Text>
-              <Text style={s.empType}>
-                {(st.employment_type ?? 'commission') === 'full_time' ? 'Full-time' : 'Commission'}
-              </Text>
-            </View>
-            <View style={{ alignItems: 'flex-end', gap: 4 }}>
-              {!st.active && <Text style={s.badgeRed}>Inactive</Text>}
-              {st.role === 'admin' && !st.auth_user_id && (
-                <Text style={s.badgeAmber}>No login</Text>
-              )}
-              <Text style={s.editLink}>Edit</Text>
-            </View>
-          </Pressable>
-        ))}
       </ScrollView>
 
       <Modal
-        visible={!!editing}
+        visible={visible}
         animationType="slide"
         presentationStyle="formSheet"
-        onRequestClose={() => setEditing(null)}
+        onRequestClose={close}
       >
         <SafeAreaView style={s.modalContainer} edges={['top']}>
           <View style={s.modalHeader}>
-            <Pressable onPress={() => setEditing(null)}>
+            <Pressable onPress={close} hitSlop={8}>
               <Text style={s.modalCancel}>Cancel</Text>
             </Pressable>
             <Text style={s.modalTitle}>{editing?.id ? 'Edit staff' : 'Add staff'}</Text>
-            <Pressable onPress={handleSave} disabled={busy}>
-              <Text style={s.modalSave}>{busy ? '...' : 'Save'}</Text>
+            <Pressable
+              onPress={handleSave}
+              disabled={busy}
+              style={({ pressed }) => [s.saveBtn, busy && s.saveBtnDisabled, pressed && s.addBtnPressed]}
+            >
+              <Text style={s.saveBtnText}>{busy ? 'Saving…' : 'Save'}</Text>
             </Pressable>
           </View>
 
           <ScrollView contentContainerStyle={s.modalBody}>
+            {/* Live preview */}
+            <View style={s.previewCard}>
+              <View style={[s.avatarLg, editing?.role === 'admin' && s.avatarAdmin]}>
+                <Text style={[s.avatarTextLg, editing?.role === 'admin' && s.avatarTextAdmin]}>
+                  {editing?.name?.trim().charAt(0).toUpperCase() || '?'}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.previewName} numberOfLines={1}>
+                  {editing?.name?.trim() || 'New staff'}
+                </Text>
+                <Text style={s.email} numberOfLines={1}>
+                  {editing?.email?.trim() || '—'}
+                  {editing?.phone?.trim() ? ` · ${editing.phone.trim()}` : ''}
+                </Text>
+              </View>
+              <Text style={editing?.role === 'admin' ? s.roleAdmin : s.roleBarber}>
+                {editing?.role === 'admin' ? 'Admin' : 'Barber'}
+              </Text>
+            </View>
+
+            <View style={s.formCard}>
             <Text style={s.label}>Name</Text>
             <TextInput
               style={s.input}
@@ -255,7 +321,9 @@ export default function AdminStaff() {
                     style={[s.pill, on && s.pillOn]}
                     onPress={() => setEditing((e) => ({ ...e!, role: r }))}
                   >
-                    <Text style={[s.pillText, on && s.pillTextOn]}>{r}</Text>
+                    <Text style={[s.pillText, on && s.pillTextOn]}>
+                      {r === 'admin' ? 'Admin' : 'Barber'}
+                    </Text>
                   </Pressable>
                 );
               })}
@@ -278,12 +346,16 @@ export default function AdminStaff() {
               })}
             </View>
 
-            <View style={s.activeRow}>
-              <Text style={s.label}>Active</Text>
+            <View style={s.activeRowDivided}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.label}>Active</Text>
+                <Text style={s.helper}>Inactive staff can't start a shift.</Text>
+              </View>
               <Switch
                 value={editing?.active ?? true}
                 onValueChange={(v) => setEditing((e) => ({ ...e!, active: v }))}
               />
+            </View>
             </View>
 
             {editing?.id && editing?.role === 'admin' && !editing?.auth_user_id && (
@@ -446,5 +518,110 @@ const s = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
     borderRadius: radius.md,
     padding: space.md
-  }
+  },
+
+  // ===== Modern list/modal additions =====
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  addBtnSm: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primary,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: radius.md
+  },
+  addBtnPressed: { opacity: 0.85 },
+  rowInactive: { opacity: 0.55 },
+  rowPressed: { backgroundColor: colors.surfaceAlt },
+  rowMid: { flex: 1, gap: 3 },
+
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  avatarAdmin: { backgroundColor: colors.text },
+  avatarText: { fontSize: 16, fontWeight: '800', color: colors.accentDeep },
+  avatarTextAdmin: { color: colors.primaryText },
+
+  subRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+  subDot: { fontSize: 11, color: colors.subtle },
+  noLogin: { fontSize: 11, fontWeight: '700', color: colors.warn, letterSpacing: 0.2 },
+
+  empty: { alignItems: 'center', paddingVertical: space.xl, gap: space.sm },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4
+  },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  emptyText: { fontSize: 13, color: colors.muted, textAlign: 'center', maxWidth: 260 },
+  emptyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: radius.md,
+    marginTop: space.sm
+  },
+
+  saveBtn: {
+    backgroundColor: colors.primary,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    borderRadius: 999
+  },
+  saveBtnDisabled: { opacity: 0.5 },
+  saveBtnText: { color: colors.primaryText, fontSize: 14, fontWeight: '700', letterSpacing: 0.2 },
+
+  previewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: space.md,
+    ...cardShadow
+  },
+  avatarLg: {
+    width: 48,
+    height: 48,
+    borderRadius: 999,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  avatarTextLg: { fontSize: 20, fontWeight: '800', color: colors.accentDeep },
+  previewName: { fontSize: 16, fontWeight: '700', color: colors.text, letterSpacing: -0.2 },
+
+  formCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: space.lg,
+    gap: space.md,
+    ...cardShadow
+  },
+  activeRowDivided: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: space.md
+  },
+  helper: { fontSize: 11, color: colors.subtle, marginTop: 2 }
 });

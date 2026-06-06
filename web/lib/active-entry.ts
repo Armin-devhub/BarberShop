@@ -6,10 +6,13 @@ import { useRouter } from 'next/navigation';
 import { supabase } from './supabase';
 
 const ACTIVE_ENTRY_KEY = 'barbershop.activeEntry';
+const ACTIVE_TOKEN_KEY = 'barbershop.activeEntryToken';
 
-export function setActiveEntryId(id: string): void {
+// Store the entry id + its cancel token (proof of ownership for cancelling).
+export function setActiveEntry(id: string, token: string): void {
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(ACTIVE_ENTRY_KEY, id);
+  window.localStorage.setItem(ACTIVE_TOKEN_KEY, token);
 }
 
 export function getActiveEntryId(): string | null {
@@ -17,9 +20,15 @@ export function getActiveEntryId(): string | null {
   return window.localStorage.getItem(ACTIVE_ENTRY_KEY);
 }
 
+export function getActiveEntryToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return window.localStorage.getItem(ACTIVE_TOKEN_KEY);
+}
+
 export function clearActiveEntryId(): void {
   if (typeof window === 'undefined') return;
   window.localStorage.removeItem(ACTIVE_ENTRY_KEY);
+  window.localStorage.removeItem(ACTIVE_TOKEN_KEY);
 }
 
 /**
