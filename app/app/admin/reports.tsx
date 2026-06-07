@@ -385,7 +385,7 @@ export default function AdminReports() {
     <ScrollView style={s.flex} contentContainerStyle={s.scrollContent}>
       <View style={pageHeader.wrap}>
         <Text style={pageHeader.subtitle}>Reports</Text>
-        <Text style={pageHeader.title}>Export & archive</Text>
+        <Text style={pageHeader.title}>Export & Archive</Text>
       </View>
 
       <View style={s.yearBar}>

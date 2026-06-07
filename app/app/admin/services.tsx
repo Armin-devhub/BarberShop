@@ -117,7 +117,7 @@ export default function AdminServices() {
         <View style={s.headerRow}>
           <View style={pageHeader.wrap}>
             <Text style={pageHeader.subtitle}>Services · {list.length} offered</Text>
-            <Text style={pageHeader.title}>Cuts & treatments</Text>
+            <Text style={pageHeader.title}>Cuts & Treatments</Text>
           </View>
           <Pressable style={({ pressed }) => [s.addBtn, pressed && s.addBtnPressed]} onPress={openNew}>
             <Ionicons name="add" size={18} color={colors.primaryText} />

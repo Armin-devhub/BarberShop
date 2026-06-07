@@ -1,6 +1,8 @@
 node_modules/
 .expo/
 dist/
+dist2/
+.vercel
 web-build/
 .env
 .env.local

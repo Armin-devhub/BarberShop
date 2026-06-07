@@ -107,7 +107,7 @@ export default function AdminProducts() {
         <View style={s.headerRow}>
           <View style={pageHeader.wrap}>
             <Text style={pageHeader.subtitle}>Products · {list.length} in store</Text>
-            <Text style={pageHeader.title}>Pomade & care</Text>
+            <Text style={pageHeader.title}>Pomade & Care</Text>
           </View>
           <Pressable style={({ pressed }) => [s.addBtnSm, pressed && s.addBtnPressed]} onPress={openNew}>
             <Ionicons name="add" size={18} color={colors.primaryText} />

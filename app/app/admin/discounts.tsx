@@ -139,7 +139,7 @@ export default function AdminDiscounts() {
         <View style={s.headerRow}>
           <View style={pageHeader.wrap}>
             <Text style={pageHeader.subtitle}>Discounts · {list.length} codes</Text>
-            <Text style={pageHeader.title}>Promo codes</Text>
+            <Text style={pageHeader.title}>Promo Codes</Text>
           </View>
           <Pressable style={({ pressed }) => [s.addBtnSm, pressed && s.addBtnPressed]} onPress={openNew}>
             <Ionicons name="add" size={18} color={colors.primaryText} />

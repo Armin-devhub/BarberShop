@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase, onBackendChange } from './supabase';
 import type { Staff } from './types';
@@ -21,6 +21,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // below re-binds to the new backend's client.
   const [backendVersion, setBackendVersion] = useState(0);
 
+  // Show the full-screen spinner only on the FIRST auth resolution. Later auth
+  // events (notably the token refresh Supabase fires when the browser tab
+  // regains focus) must update state silently — otherwise flipping `loading`
+  // unmounts the admin <Slot/> and the page snaps back to the Dashboard.
+  const didInitialLoad = useRef(false);
+  // The staff row we've already loaded; lets a same-user token refresh skip the
+  // refetch (and the UI flash) entirely.
+  const loadedUserId = useRef<string | null>(null);
+
   useEffect(() => onBackendChange(() => setBackendVersion((v) => v + 1)), []);
 
   async function loadStaff(authUserId: string): Promise<Staff | null> {
@@ -39,28 +48,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return claimed ?? null;
   }
 
-  async function refresh(currentSession: Session | null) {
+  async function applySession(
+    currentSession: Session | null,
+    { showLoading }: { showLoading: boolean }
+  ) {
     setSession(currentSession);
+
     if (!currentSession) {
+      loadedUserId.current = null;
       setStaff(null);
       setLoading(false);
       return;
     }
-    setLoading(true);
+
+    // Same user we've already resolved (e.g. a tab-focus token refresh): keep
+    // the refreshed token but don't refetch staff or touch `loading`, so the
+    // current admin page stays exactly where it is.
+    if (loadedUserId.current === currentSession.user.id) {
+      setLoading(false);
+      return;
+    }
+
+    if (showLoading) setLoading(true);
     const result = await loadStaff(currentSession.user.id);
+    loadedUserId.current = currentSession.user.id;
     setStaff(result);
     setLoading(false);
   }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      refresh(data.session);
+      applySession(data.session, { showLoading: !didInitialLoad.current });
+      didInitialLoad.current = true;
     });
 
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      refresh(newSession);
+      // After the first resolution, never block the UI again — background
+      // refreshes update state silently instead of unmounting the page.
+      applySession(newSession, { showLoading: !didInitialLoad.current });
+      didInitialLoad.current = true;
     });
 
     return () => {
@@ -70,8 +98,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backendVersion]);
 
+  // Force a staff refetch (e.g. after editing the signed-in profile). Silent —
+  // never toggles `loading`, so it won't disturb the current page.
   async function reloadStaff() {
-    if (session) await refresh(session);
+    if (!session) return;
+    const result = await loadStaff(session.user.id);
+    loadedUserId.current = session.user.id;
+    setStaff(result);
   }
 
   async function signOut() {

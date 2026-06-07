@@ -65,7 +65,7 @@ export default function AdminSettings() {
     <ScrollView style={s.flex} contentContainerStyle={s.scrollContent}>
       <View style={pageHeader.wrap}>
         <Text style={pageHeader.subtitle}>Settings</Text>
-        <Text style={pageHeader.title}>Database mode</Text>
+        <Text style={pageHeader.title}>Database Mode</Text>
       </View>
 
       <View style={s.infoCard}>

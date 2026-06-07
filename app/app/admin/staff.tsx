@@ -141,7 +141,7 @@ export default function AdminStaff() {
         <View style={s.headerRow}>
           <View style={pageHeader.wrap}>
             <Text style={pageHeader.subtitle}>Staff · {list.length} total</Text>
-            <Text style={pageHeader.title}>Manage barbers</Text>
+            <Text style={pageHeader.title}>Manage Barbers</Text>
           </View>
           <Pressable
             style={({ pressed }) => [s.addBtnSm, pressed && s.addBtnPressed]}

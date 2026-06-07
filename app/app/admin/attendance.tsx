@@ -299,7 +299,7 @@ export default function AdminAttendance() {
     <ScrollView style={s.flex} contentContainerStyle={s.scrollContent}>
       <View style={pageHeader.wrap}>
         <Text style={pageHeader.subtitle}>Attendance</Text>
-        <Text style={pageHeader.title}>Shifts & breaks</Text>
+        <Text style={pageHeader.title}>Shifts & Breaks</Text>
       </View>
 
       {/* Barber filter */}

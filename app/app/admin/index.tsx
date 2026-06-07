@@ -290,7 +290,7 @@ export default function AdminDashboard() {
                 {/* Revenue area chart */}
                 <View style={[s.card, s.gridCard]}>
                   <View style={s.cardHeadRow}>
-                    <Text style={s.cardHeading}>Revenue · last 7 days</Text>
+                    <Text style={s.cardHeading}>Revenue · Last 7 Days</Text>
                     <Text style={s.cardHeadHint}>RM</Text>
                   </View>
                   <View onLayout={(e) => setAreaW(e.nativeEvent.layout.width)}>
@@ -308,7 +308,7 @@ export default function AdminDashboard() {
                 {/* Revenue · last 6 months */}
                 <View style={[s.card, s.gridCard]}>
                   <View style={s.cardHeadRow}>
-                    <Text style={s.cardHeading}>Revenue · last 6 months</Text>
+                    <Text style={s.cardHeading}>Revenue · Last 6 Months</Text>
                     <Text style={s.cardHeadHint}>RM</Text>
                   </View>
                   {analytics.last6Months.every((x) => x.revenue_sen === 0) ? (
@@ -340,7 +340,7 @@ export default function AdminDashboard() {
 
                 {/* Busiest hours */}
                 <View style={[s.card, s.gridCard]}>
-                  <Text style={s.cardHeading}>Busiest hours</Text>
+                  <Text style={s.cardHeading}>Busiest Hours</Text>
                   {analytics.busiestHours.length === 0 ? (
                     <Text style={s.emptyMini}>Not enough data yet.</Text>
                   ) : (
@@ -369,7 +369,7 @@ export default function AdminDashboard() {
 
                 {/* Cuts by weekday */}
                 <View style={[s.card, s.gridCard]}>
-                  <Text style={s.cardHeading}>Cuts by weekday</Text>
+                  <Text style={s.cardHeading}>Cuts by Weekday</Text>
                   {analytics.cuts === 0 ? (
                     <Text style={s.emptyMini}>No cuts yet this month.</Text>
                   ) : (
@@ -398,7 +398,7 @@ export default function AdminDashboard() {
 
                 {/* Service mix donut */}
                 <View style={[s.card, s.gridCard]}>
-                  <Text style={s.cardHeading}>Service mix</Text>
+                  <Text style={s.cardHeading}>Service Mix</Text>
                   {analytics.cuts === 0 ? (
                     <Text style={s.emptyMini}>No cuts yet this month.</Text>
                   ) : (
@@ -429,7 +429,7 @@ export default function AdminDashboard() {
 
                 {/* Completion rate */}
                 <View style={[s.card, s.gridCard]}>
-                  <Text style={s.cardHeading}>Completion · this month</Text>
+                  <Text style={s.cardHeading}>Completion · This Month</Text>
                   {analytics.completion.done + analytics.completion.cancelled === 0 ? (
                     <Text style={s.emptyMini}>No finished jobs yet this month.</Text>
                   ) : (
@@ -466,7 +466,7 @@ export default function AdminDashboard() {
 
                 {/* Top barbers */}
                 <View style={[s.card, s.gridCard]}>
-                  <Text style={s.cardHeading}>Top barbers · revenue</Text>
+                  <Text style={s.cardHeading}>Top Barbers · Revenue</Text>
                   {analytics.topBarbers.length === 0 ? (
                     <Text style={s.emptyMini}>No cuts yet this month.</Text>
                   ) : (
@@ -488,7 +488,7 @@ export default function AdminDashboard() {
 
                 {/* Discount usage */}
                 <View style={[s.card, s.gridCard]}>
-                  <Text style={s.cardHeading}>Discount usage · this month</Text>
+                  <Text style={s.cardHeading}>Discount Usage · This Month</Text>
                   {analytics.cuts === 0 ? (
                     <Text style={s.emptyMini}>No cuts yet this month.</Text>
                   ) : (
