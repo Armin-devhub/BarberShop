@@ -558,27 +558,19 @@ export default function AdminReports() {
   );
 }
 
-// On web only: write the report HTML into an offscreen iframe and print just
-// that document. Avoids expo-print's web fallback, which prints the whole app
-// window (sidebar included). Typed loosely so this never pulls DOM types into
-// the native build — it's only ever called when Platform.OS === 'web'.
+// On web only: open the report HTML in a NEW window and print THAT document, so
+// the saved PDF is the report — not a screenshot of the admin UI. A real window
+// (not a hidden iframe) is used because iOS Safari prints the PARENT page when
+// you call print() on an iframe, which is exactly the "it printed the page, not
+// the report" bug. Typed loosely so this never pulls DOM types into the native
+// build — it's only ever called when Platform.OS === 'web'.
 function printHtmlOnWeb(html: string): void {
-  const d: any = (globalThis as any).document;
-  if (!d?.body) return;
+  const w: any = (globalThis as any).window;
+  if (!w?.open) return;
 
-  const iframe = d.createElement('iframe');
-  iframe.setAttribute('aria-hidden', 'true');
-  iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = '0';
-  d.body.appendChild(iframe);
-
-  const win = iframe.contentWindow;
+  const win = w.open('', '_blank');
   if (!win) {
-    iframe.remove();
+    w.alert?.('Allow pop-ups for this site, then tap Generate PDF again.');
     return;
   }
   win.document.open();
@@ -587,14 +579,13 @@ function printHtmlOnWeb(html: string): void {
 
   const doPrint = () => {
     win.focus();
-    win.print();
-    setTimeout(() => iframe.remove(), 1000);
+    win.print(); // opens the print/share sheet → Save as PDF (incl. iOS Safari)
   };
   // Give the inlined base64 logo a moment to decode before printing.
   if (win.document.readyState === 'complete') {
-    setTimeout(doPrint, 150);
+    setTimeout(doPrint, 300);
   } else {
-    iframe.onload = () => setTimeout(doPrint, 150);
+    win.onload = () => setTimeout(doPrint, 300);
   }
 }
 

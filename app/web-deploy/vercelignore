@@ -1,0 +1,5 @@
+# Copied to dist2/.vercelignore at deploy time. Vercel excludes node_modules by
+# default, but the Expo web export serves its vector-icon fonts from
+# assets/node_modules/ — force-include them so icons render.
+!node_modules
+!assets/node_modules

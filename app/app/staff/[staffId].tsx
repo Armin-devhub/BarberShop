@@ -299,6 +299,11 @@ export default function StaffDashboard() {
   }
 
   async function handleSendReceipt(entry: QueueEntryWithService) {
+    // iOS Safari blocks window.open once an await has run (the phone fetch
+    // below breaks the user-gesture). So on web we open the tab synchronously
+    // now and just redirect it to the wa.me URL once it's built.
+    const waWindow = Platform.OS === 'web' ? window.open('', '_blank') : null;
+
     const svcName = entry.services?.name ?? 'Custom service';
     const base = entry.base_price_sen ?? 0;
     const final = entry.final_price_sen ?? 0;
@@ -316,6 +321,7 @@ export default function StaffDashboard() {
       p_entry_id: entry.id
     });
     if (phoneErr || !phone) {
+      waWindow?.close();
       Alert.alert('Could not load contact', phoneErr?.message ?? 'No phone on file.');
       return;
     }
@@ -325,12 +331,18 @@ export default function StaffDashboard() {
       lines.join('\n') +
       `\n\nQueue #${entry.queue_number}\n\nSee you next time!`;
     const url = buildWhatsAppUrl(phone as string, message);
-    const ok = await Linking.canOpenURL(url);
-    if (!ok) {
-      Alert.alert('WhatsApp not installed', 'Install WhatsApp to send receipts.');
-      return;
+    if (Platform.OS === 'web') {
+      // wa.me opens WhatsApp Web / the app from a browser even without the
+      // native app installed, so no canOpenURL gate is needed here.
+      if (waWindow) waWindow.location.href = url;
+      else window.open(url, '_blank');
+    } else {
+      try {
+        await Linking.openURL(url);
+      } catch {
+        Alert.alert('Could not open WhatsApp', 'Make sure WhatsApp is installed.');
+      }
     }
-    await Linking.openURL(url);
   }
 
   function HeaderRight() {

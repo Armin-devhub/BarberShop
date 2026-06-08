@@ -109,3 +109,35 @@ export async function setActiveBackend(next: Backend): Promise<void> {
   const { error } = await controlClient.rpc('set_active_backend', { p_value: next });
   if (error) throw error;
 }
+
+// Shop closing time (Malaysia time, "HH:MM") — drives the auto-end-shift cron.
+// Read/written on the ACTIVE backend, since that's where the shifts + cron live.
+export async function getShopCloseTime(): Promise<string> {
+  const { data, error } = await supabase
+    .from('app_control')
+    .select('shop_close_time')
+    .eq('id', 1)
+    .maybeSingle();
+  if (error || !data?.shop_close_time) return '00:00';
+  return String(data.shop_close_time).slice(0, 5); // 'HH:MM:SS' -> 'HH:MM'
+}
+
+export async function setShopCloseTime(value: string): Promise<void> {
+  const { error } = await supabase.rpc('set_shop_close_time', { p_time: value });
+  if (error) throw error;
+}
+
+export interface CleanDatabaseResult {
+  deleted_customers: number;
+  deleted_services: number;
+  deleted_products: number;
+  deleted_staff: number;
+}
+
+// Wipes the ACTIVE backend down to the calling admin's account. Irreversible.
+// Requires the typed confirmation string the RPC checks ("ERASE").
+export async function cleanDatabase(confirm: string): Promise<CleanDatabaseResult> {
+  const { data, error } = await supabase.rpc('clean_database', { p_confirm: confirm });
+  if (error) throw error;
+  return data as CleanDatabaseResult;
+}

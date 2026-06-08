@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Novyx Barbershop — Barber Guide (Staff Mode)</title>
+<style>
+  :root{
+    --ink:#1C1A17;
+    --body:#2B2823;
+    --muted:#74706A;
+    --subtle:#A8A39B;
+    --line:#E7E5E0;
+    --green:#0E9F6E;
+    --green-deep:#0B7A55;
+    --green-soft:#E6F5EE;
+    --amber:#B45309;
+    --amber-soft:#FBF1E3;
+    --danger:#DC2626;
+    --danger-soft:#FCEBEA;
+    --whatsapp:#1FAE54;
+    --paper:#FFFFFF;
+    --canvas:#F7F6F4;
+  }
+  *{ box-sizing:border-box; }
+
+  @page{ size:A4; margin:18mm 16mm 18mm 16mm; }
+  @page:first{ margin:0; }
+
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color:var(--body); font-size:10.7pt; line-height:1.58;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+
+  /* ---------- Cover ---------- */
+  .cover{
+    position:relative; height:297mm; width:100%;
+    background:linear-gradient(155deg,#0B7A55 0%, #0E9F6E 50%, #14C07E 100%);
+    color:#fff; page-break-after:always; overflow:hidden;
+  }
+  .cover .glow{ position:absolute; width:520px; height:520px; border-radius:50%;
+    background:rgba(255,255,255,0.12); top:-160px; right:-150px; }
+  .cover .glow2{ position:absolute; width:300px; height:300px; border-radius:50%;
+    background:rgba(255,255,255,0.07); bottom:-150px; right:-90px; }
+  .cover-inner{ position:absolute; inset:0; padding:40mm 26mm; display:flex; flex-direction:column; }
+  .brand-mark{ display:flex; align-items:center; gap:14px; }
+  .diamond{ width:30px; height:30px; transform:rotate(45deg); background:#fff; border-radius:7px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.18); }
+  .brand-name{ font-size:20pt; font-weight:800; letter-spacing:-0.5px; }
+  .brand-tag{ font-size:9pt; letter-spacing:3px; opacity:0.85; margin-top:2px; }
+  .cover-title-block{ margin-top:auto; }
+  .cover-kicker{ font-size:11pt; font-weight:700; letter-spacing:4px; text-transform:uppercase; opacity:0.85; }
+  .cover-title{ font-size:42pt; font-weight:800; letter-spacing:-1.2px; line-height:1.04; margin:10px 0 4px; }
+  .cover-sub{ font-size:14pt; font-weight:400; opacity:0.92; max-width:120mm; }
+  .cover-rule{ height:3px; width:80px; background:#fff; border-radius:3px; margin:26px 0; opacity:0.9; }
+  .cover-meta{ font-size:10pt; opacity:0.92; }
+  .cover-meta b{ font-weight:700; }
+  .cover-foot{ margin-top:28px; font-size:8.5pt; letter-spacing:1px; opacity:0.75; text-transform:uppercase; }
+
+  /* ---------- Typography ---------- */
+  h1,h2,h3,h4{ color:var(--ink); font-weight:800; letter-spacing:-0.3px; }
+  h2.section{ font-size:21pt; margin:0 0 2px; padding-top:2mm; }
+  .section-kicker{ font-size:8.5pt; font-weight:800; letter-spacing:2.5px; color:var(--green-deep);
+    text-transform:uppercase; margin-bottom:4px; }
+  h3{ font-size:13pt; margin:18px 0 6px; }
+  p{ margin:6px 0; }
+  ul,ol{ margin:6px 0; padding-left:20px; }
+  li{ margin:3px 0; }
+  b,strong{ color:var(--ink); }
+  .lead{ font-size:11.5pt; color:var(--body); }
+
+  .page-break{ page-break-before:always; }
+  section.screen{ page-break-before:always; }
+
+  .doc-head{ display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1px solid var(--line); padding-bottom:6px; margin-bottom:14px;
+    color:var(--subtle); font-size:8pt; letter-spacing:1.5px; text-transform:uppercase; }
+  .doc-head .dh-brand{ font-weight:800; color:var(--green-deep); }
+
+  /* ---------- TOC ---------- */
+  .toc-list{ list-style:none; margin:0; padding:0; }
+  .toc-list li{ display:flex; align-items:baseline; gap:10px; padding:8px 0;
+    border-bottom:1px dotted var(--line); font-size:11pt; }
+  .toc-num{ color:var(--green); font-weight:800; width:30px; flex:none; font-variant-numeric:tabular-nums; }
+  .toc-label{ color:var(--ink); font-weight:600; }
+
+  /* ---------- Figures ---------- */
+  figure{ margin:14px 0 6px; page-break-inside:avoid; }
+  figure img{ display:block; border:1px solid var(--line); border-radius:12px;
+    box-shadow:0 4px 14px rgba(28,26,23,0.10); }
+  .shot-phone img{ width:58%; margin:0 auto; }
+  .shot-phone-sm img{ width:46%; margin:0 auto; }
+  .shot-wide img{ width:80%; margin:0 auto; }
+  figcaption{ font-size:8.5pt; color:var(--muted); margin-top:8px; text-align:center; font-style:italic; }
+
+  .figrow{ display:flex; gap:16px; justify-content:center; align-items:flex-start;
+    margin:14px 0 6px; page-break-inside:avoid; }
+  .figrow figure{ margin:0; flex:1; }
+  .figrow figure img{ width:100%; }
+
+  /* ---------- Callouts ---------- */
+  .callout{ border-radius:8px; padding:10px 14px; margin:12px 0; font-size:9.9pt;
+    page-break-inside:avoid; border-left:4px solid var(--green); background:var(--green-soft); }
+  .callout .ct{ font-weight:800; font-size:8.5pt; letter-spacing:1.2px; text-transform:uppercase;
+    display:block; margin-bottom:2px; color:var(--green-deep); }
+  .callout.tip{ border-left-color:var(--green); background:var(--green-soft); }
+  .callout.tip .ct{ color:var(--green-deep); }
+  .callout.warn{ border-left-color:var(--danger); background:var(--danger-soft); }
+  .callout.warn .ct{ color:#B4123A; }
+  .callout.note{ border-left-color:var(--amber); background:var(--amber-soft); }
+  .callout.note .ct{ color:#8A4B08; }
+
+  /* ---------- Steps ---------- */
+  ol.steps{ counter-reset:step; list-style:none; padding-left:0; margin:10px 0; }
+  ol.steps > li{ position:relative; padding-left:36px; margin:10px 0; page-break-inside:avoid; font-size:10.7pt; }
+  ol.steps > li::before{ counter-increment:step; content:counter(step);
+    position:absolute; left:0; top:-1px; width:24px; height:24px; border-radius:50%;
+    background:var(--green); color:#fff; font-size:10pt; font-weight:800;
+    display:flex; align-items:center; justify-content:center; }
+
+  /* ---------- Reference tables ---------- */
+  table.ref{ width:100%; border-collapse:collapse; margin:12px 0; font-size:9.8pt; page-break-inside:avoid; }
+  table.ref th{ background:var(--ink); color:#fff; text-align:left; padding:7px 10px;
+    font-size:8.5pt; letter-spacing:0.6px; text-transform:uppercase; }
+  table.ref td{ border-bottom:1px solid var(--line); padding:7px 10px; vertical-align:top; }
+  table.ref tr:nth-child(even) td{ background:#FAFAF8; }
+  table.ref td.field{ font-weight:700; color:var(--ink); white-space:nowrap; }
+
+  /* ---------- Pills / chips ---------- */
+  .pill{ display:inline-block; padding:1px 8px; border-radius:999px; font-size:8pt; font-weight:700;
+    letter-spacing:0.4px; vertical-align:middle; }
+  .pill.green{ background:var(--green-soft); color:var(--green-deep); }
+  .pill.red{ background:var(--danger-soft); color:#B4123A; }
+  .pill.gray{ background:#EEEDEA; color:var(--muted); }
+  .btnchip{ display:inline-block; padding:2px 9px; border-radius:7px; font-size:8.8pt; font-weight:700;
+    vertical-align:middle; }
+  .btnchip.go{ background:var(--green); color:#fff; }
+  .btnchip.out{ background:#fff; color:var(--ink); border:1px solid var(--line); }
+  .btnchip.wa{ background:var(--whatsapp); color:#fff; }
+  .btnchip.danger{ background:#fff; color:var(--danger); border:1px solid var(--danger-soft); }
+
+  .purpose{ background:var(--canvas); border:1px solid var(--line); border-radius:8px;
+    padding:10px 14px; margin:10px 0 4px; font-size:10.2pt; }
+  .purpose b{ color:var(--green-deep); }
+
+  .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; vertical-align:middle; margin-right:3px; }
+  .dot.g{ background:var(--green); } .dot.a{ background:#E0A82E; } .dot.x{ background:#B8B3AB; }
+
+  .mini-foot{ margin-top:30px; padding-top:8px; border-top:1px solid var(--line);
+    font-size:8pt; color:var(--subtle); text-align:center; letter-spacing:1px; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="glow"></div>
+  <div class="glow2"></div>
+  <div class="cover-inner">
+    <div class="brand-mark">
+      <div class="diamond"></div>
+      <div>
+        <div class="brand-name">Novyx</div>
+        <div class="brand-tag">BARBERSHOP</div>
+      </div>
+    </div>
+    <div class="cover-title-block">
+      <div class="cover-kicker">Barber Guide</div>
+      <div class="cover-title">Staff Mode<br>Handbook</div>
+      <div class="cover-sub">Everything you need to run your chair — clock in, manage your queue, set prices, send receipts, and clock out.</div>
+      <div class="cover-rule"></div>
+      <div class="cover-meta">
+        <b>For:</b> Barbers using the shop tablet<br>
+        <b>No login needed:</b> just tap your name and go<br>
+        <b>Version:</b> 1.0 &nbsp;·&nbsp; <b>Issued:</b> June 2026
+      </div>
+      <div class="cover-foot">Keep this handy at the counter</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ INTRO + TOC ============ -->
+<div class="doc-head"><span class="dh-brand">NOVYX · BARBER GUIDE</span><span>Introduction</span></div>
+<div class="section-kicker">Welcome</div>
+<h2 class="section">Before you start</h2>
+<p class="lead">This handbook shows you how to use the Novyx tablet at your chair. It's simple: you tap your name, choose what you're cutting today, and the app keeps your queue in order while you work.</p>
+
+<p>You don't need a password or an account. The tablet stays on the staff screen all day, and anyone working picks their own name to open their queue. Each chapter is short, with a picture and the exact buttons to tap.</p>
+
+<div class="callout">
+  <span class="ct">The one rule</span>
+  Tap <b>your own name</b> only. Everything you do — cuts, prices, breaks — is recorded under the name you pick, and that's how your pay is worked out. The <b>Admin ›</b> link in the top corner is for the shop owner; you don't need it.
+</div>
+
+<h3>Your day in five steps</h3>
+<ol>
+  <li><b>Pick your name</b> on the tablet.</li>
+  <li><b>Clock in</b> — choose the services you'll do today.</li>
+  <li><b>Serve customers</b> — start the next person, cut, tap done.</li>
+  <li><b>Take breaks</b> when you need to — you'll be hidden from new customers.</li>
+  <li><b>End your shift</b> when you're finished.</li>
+</ol>
+
+<div class="page-break"></div>
+<div class="doc-head"><span class="dh-brand">NOVYX · BARBER GUIDE</span><span>Contents</span></div>
+<div class="section-kicker">Contents</div>
+<h2 class="section">What's inside</h2>
+<ol class="toc-list">
+  <li><span class="toc-num">1</span><span class="toc-label">Find your name &amp; open your queue</span></li>
+  <li><span class="toc-num">2</span><span class="toc-label">Clock in — pick your services</span></li>
+  <li><span class="toc-num">3</span><span class="toc-label">Your queue screen, explained</span></li>
+  <li><span class="toc-num">4</span><span class="toc-label">Serving customers</span></li>
+  <li><span class="toc-num">5</span><span class="toc-label">Prices, discounts &amp; receipts</span></li>
+  <li><span class="toc-num">6</span><span class="toc-label">Cancelling a customer</span></li>
+  <li><span class="toc-num">7</span><span class="toc-label">Taking a break</span></li>
+  <li><span class="toc-num">8</span><span class="toc-label">Ending your shift</span></li>
+  <li><span class="toc-num">A</span><span class="toc-label">Button cheat-sheet &amp; tips</span></li>
+</ol>
+
+<!-- ============ 1. PICK NAME ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · BARBER GUIDE</span><span>1 · Find your name</span></div>
+<div class="section-kicker">Chapter 1</div>
+<h2 class="section">Find your name &amp; open your queue</h2>
+<div class="purpose"><b>What this is:</b> The home screen on the shop tablet. Everyone working picks their name here.</div>
+
+<figure class="shot-phone">
+  <img src="screenshots/01-staff-picker.png" alt="Staff picker screen">
+  <figcaption>"Who's on shift?" — tap your name to begin.</figcaption>
+</figure>
+
+<p>Each barber has a row. The coloured dot tells you their status at a glance:</p>
+<table class="ref">
+  <tr><th style="width:30%">What you see</th><th>What it means</th></tr>
+  <tr><td class="field"><span class="dot g"></span>On shift · Free now</td><td>Working, with no one waiting. Tap <span class="btnchip go">Open queue →</span> to see your chair.</td></tr>
+  <tr><td class="field"><span class="dot a"></span>On shift · X in queue</td><td>Working, with customers waiting. The number is how many.</td></tr>
+  <tr><td class="field"><span class="dot x"></span>Off shift</td><td>Not started yet. Tap <span class="btnchip out">Clock in →</span> to start your shift.</td></tr>
+</table>
+
+<ol class="steps">
+  <li>Find your name in the list.</li>
+  <li>If you haven't started yet, tap <b>Clock in →</b> (go to Chapter 2).</li>
+  <li>If you're already on shift, tap <b>Open queue →</b> to jump straight to your customers.</li>
+</ol>
+
+<div class="callout tip">
+  <span class="ct">Good to know</span>
+  This page updates by itself — the green "Live · updates automatically" line means you never need to refresh it.
+</div>
+</section>
+
+<!-- ============ 2. CLOCK IN ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · BARBER GUIDE</span><span>2 · Clock in</span></div>
+<div class="section-kicker">Chapter 2</div>
+<h2 class="section">Clock in — pick your services</h2>
+<div class="purpose"><b>What this is:</b> Before customers can choose you, tell the app which cuts you're offering today.</div>
+
+<figure class="shot-phone">
+  <img src="screenshots/02-clock-in.png" alt="Clock-in service picker">
+  <figcaption>Tap the services you'll do — selected ones turn green with a tick.</figcaption>
+</figure>
+
+<ol class="steps">
+  <li>Tap each service you'll offer this shift. Tap again to unselect. Pick as many as you like.</li>
+  <li>Selected services turn <b>green with a tick</b> <span class="pill green">✓</span>.</li>
+  <li>When you're happy, tap <b>Start shift →</b>.</li>
+</ol>
+
+<div class="callout note">
+  <span class="ct">Heads up</span>
+  You must pick at least one service. If you tap <b>Start shift →</b> with none selected, you'll see "<b>Pick services — Select at least one service for this shift.</b>"
+</div>
+<div class="callout tip">
+  <span class="ct">Why it matters</span>
+  Customers only see — and can only book — the services you tick here. If you don't offer beard trims today, leave that one unticked and no one can pick it.
+</div>
+</section>
+
+<!-- ============ 3. QUEUE SCREEN ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · BARBER GUIDE</span><span>3 · Your queue screen</span></div>
+<div class="section-kicker">Chapter 3</div>
+<h2 class="section">Your queue screen, explained</h2>
+<div class="purpose"><b>What this is:</b> Your main screen for the whole shift. Everything you need is here.</div>
+
+<figure class="shot-phone">
+  <img src="screenshots/04-now-serving.png" alt="Queue dashboard with a customer being served">
+  <figcaption>The queue screen while serving a customer.</figcaption>
+</figure>
+
+<p>From top to bottom:</p>
+<table class="ref">
+  <tr><th style="width:34%">Area</th><th>What it shows</th></tr>
+  <tr><td class="field">Live · [you] on shift</td><td>Confirms you're clocked in, when you started, and how many people are waiting.</td></tr>
+  <tr><td class="field"><span class="btnchip danger">End shift</span></td><td>Top-right. Finishes your shift (Chapter 8).</td></tr>
+  <tr><td class="field">☕ Take a break</td><td>Hide yourself from new customers for a while (Chapter 7).</td></tr>
+  <tr><td class="field">Now serving</td><td>The customer in your chair right now, their service and price, and the buttons to finish or change the price.</td></tr>
+  <tr><td class="field">Big green button</td><td>The main button at the bottom. It changes depending on what's happening — see Chapter 4.</td></tr>
+  <tr><td class="field">Up next · X</td><td>The waiting list, in order. Each row shows the name, service and price.</td></tr>
+</table>
+
+<div class="callout tip">
+  <span class="ct">You don't add customers</span>
+  Customers add themselves by scanning the shop's QR code and picking you. They appear in your <b>Up next</b> list automatically — you just serve them in order.
+</div>
+</section>
+
+<!-- ============ 4. SERVING ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · BARBER GUIDE</span><span>4 · Serving customers</span></div>
+<div class="section-kicker">Chapter 4</div>
+<h2 class="section">Serving customers</h2>
+<div class="purpose"><b>What this is:</b> The simple loop you repeat all day — start the next person, cut, tap done.</div>
+
+<figure class="shot-phone">
+  <img src="screenshots/03-queue-waiting.png" alt="Queue with customers waiting">
+  <figcaption>People waiting in "Up next". The big button reads "Start next customer →".</figcaption>
+</figure>
+
+<ol class="steps">
+  <li>When your chair is empty, tap <b>Start next customer →</b>. The first person in <b>Up next</b> moves into <b>Now serving</b>.</li>
+  <li>Cut their hair.</li>
+  <li>When you're finished, tap <b>Done ✓</b>. They're checked out and the next person can begin.</li>
+  <li>Tap <b>Start next customer →</b> again for the next one, and so on.</li>
+</ol>
+
+<p>The big green button always tells you what to do next:</p>
+<table class="ref">
+  <tr><th style="width:42%">Button says</th><th>Meaning</th></tr>
+  <tr><td class="field">Start next customer →</td><td>Your chair is empty and someone is waiting. Tap to begin them.</td></tr>
+  <tr><td class="field">Done ✓</td><td>Someone's in your chair and the price is set. Tap to finish &amp; check out.</td></tr>
+  <tr><td class="field" style="color:var(--muted)">Set the price first</td><td>A custom-price customer is in your chair — enter their price before you can finish (Chapter 5).</td></tr>
+  <tr><td class="field" style="color:var(--muted)">No one waiting</td><td>Your queue is empty. Nothing to do but wait for the next customer.</td></tr>
+</table>
+</section>
+
+<!-- ============ 5. PRICES ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · BARBER GUIDE</span><span>5 · Prices &amp; receipts</span></div>
+<div class="section-kicker">Chapter 5</div>
+<h2 class="section">Prices, discounts &amp; receipts</h2>
+<div class="purpose"><b>What this is:</b> How to set or change what a customer pays, and how to text them a receipt.</div>
+
+<h3>5.1 Custom-price customers</h3>
+<p>Some customers choose "<b>Custom service</b>" because they're not sure what they want — you decide the price. They show as <b>Custom</b> in the queue, and when they're in your chair you'll see a price box.</p>
+
+<figure class="shot-phone">
+  <img src="screenshots/06-custom-service.png" alt="Custom service price entry">
+  <figcaption>Type the price, tap "Set price", then "Done ✓".</figcaption>
+</figure>
+
+<ol class="steps">
+  <li>Type the amount in the <b>Price e.g. 25.00</b> box.</li>
+  <li>Tap <b>Set price</b>. The big button changes from "Set the price first" to <b>Done ✓</b>.</li>
+  <li>Tap <b>Done ✓</b> to finish.</li>
+</ol>
+
+<h3>5.2 Adding or reducing a charge</h3>
+<p>For any customer you can nudge the price up or down — for example a little extra for beard work, or a small discount for a quick trim. Tap <span class="btnchip out">+ Add charge</span> or <span class="btnchip out">− Reduce</span> on the customer.</p>
+
+<figure class="shot-phone">
+  <img src="screenshots/05-adjust-price-modal.png" alt="Adjust price box">
+  <figcaption>The "Adjust price" box — choose add or reduce, type the amount, tap Apply.</figcaption>
+</figure>
+
+<ol class="steps">
+  <li>Choose <b>+ Add charge</b> (more) or <b>− Reduce</b> (less).</li>
+  <li>Type the <b>Amount (RM)</b>.</li>
+  <li>Tap <b>Apply</b>. The new price shows on the customer straight away.</li>
+</ol>
+<p>You can also tap the price on anyone in the <b>Up next</b> list to adjust it before they even sit down.</p>
+
+<div class="callout note">
+  <span class="ct">About discount codes</span>
+  If a customer entered a promo code when they joined, the discount is already applied — you'll see it noted on their card. If you add or reduce a charge, the discount re-calculates on the new amount <b>automatically</b>. You don't do anything extra.
+</div>
+
+<h3>5.3 Sending a WhatsApp receipt</h3>
+<p>After a cut you can text the customer a tidy receipt. On the customer in your chair, tap <span class="btnchip wa">Send WhatsApp receipt →</span>. WhatsApp opens with the service, price and queue number already written — just hit send.</p>
+<div class="callout note">
+  <span class="ct">If nothing happens</span>
+  You'll need WhatsApp on the device. If it's missing you'll see "<b>WhatsApp not installed — Install WhatsApp to send receipts.</b>" Sending a receipt is optional; it doesn't affect checking the customer out.
+</div>
+</section>
+
+<!-- ============ 6. CANCEL ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · BARBER GUIDE</span><span>6 · Cancelling</span></div>
+<div class="section-kicker">Chapter 6</div>
+<h2 class="section">Cancelling a customer</h2>
+<div class="purpose"><b>What this is:</b> Removing someone who left, no-showed, or was added by mistake — without charging them.</div>
+
+<h3>6.1 Someone waiting in the queue</h3>
+<ol class="steps">
+  <li>Find them in the <b>Up next</b> list.</li>
+  <li>Tap the red <b>✕</b> on their row.</li>
+  <li>Confirm "<b>Cancel [name]? — Removes them from the queue.</b>"</li>
+</ol>
+
+<h3>6.2 Someone already in your chair</h3>
+<ol class="steps">
+  <li>On the <b>Now serving</b> card, tap <b>Cancel</b>.</li>
+  <li>Confirm "<b>Cancel [name]? — No commission will be recorded.</b>"</li>
+</ol>
+
+<div class="callout warn">
+  <span class="ct">Cancel vs. Done</span>
+  <b>Done ✓</b> means the cut happened and the customer paid — it counts toward your earnings. <b>Cancel</b> means nothing was charged and nothing is recorded. Only tap <b>Done ✓</b> for cuts you actually finished.
+</div>
+</section>
+
+<!-- ============ 7. BREAK ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · BARBER GUIDE</span><span>7 · Breaks</span></div>
+<div class="section-kicker">Chapter 7</div>
+<h2 class="section">Taking a break</h2>
+<div class="purpose"><b>What this is:</b> Step away for a rest, prayer, or lunch. New customers can't pick you while you're on break.</div>
+
+<figure class="shot-wide">
+  <img src="screenshots/07-break.png" alt="On break banner">
+  <figcaption>While on break you're hidden from customers. Tap "Continue shift" to come back.</figcaption>
+</figure>
+
+<ol class="steps">
+  <li>Tap <b>☕ Take a break</b> near the top of your queue screen.</li>
+  <li>A banner shows <b>On break · hidden from customers</b>. New customers can no longer choose you.</li>
+  <li>When you're ready, tap <b>Continue shift</b> to start taking customers again.</li>
+</ol>
+
+<table class="ref">
+  <tr><th style="width:40%">You'll see</th><th>Meaning</th></tr>
+  <tr><td class="field">Resting since HH:MM</td><td>Your break time is being counted from this moment (your chair was empty).</td></tr>
+  <tr><td class="field">Timer starts once you finish the remaining queue</td><td>You still have customers waiting — finish them first, then your break time begins.</td></tr>
+</table>
+
+<div class="callout tip">
+  <span class="ct">Breaks are yours</span>
+  Taking a break doesn't end your shift — you stay clocked in. It just stops new people from joining your line while you're away.
+</div>
+</section>
+
+<!-- ============ 8. END SHIFT ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · BARBER GUIDE</span><span>8 · Ending your shift</span></div>
+<div class="section-kicker">Chapter 8</div>
+<h2 class="section">Ending your shift</h2>
+<div class="purpose"><b>What this is:</b> Clocking out at the end of the day.</div>
+
+<ol class="steps">
+  <li>Tap <b>End shift</b> at the top-right of your queue screen.</li>
+  <li>You stop appearing to new customers, and your hours stop counting.</li>
+  <li>If anyone is still in your line, you can finish them — the screen shows "<b>Shift ended · finishing remaining</b>" until your queue is clear.</li>
+</ol>
+
+<div class="callout warn">
+  <span class="ct">Finish your current customer first</span>
+  If someone is in your chair, tap <b>Done ✓</b> (or <b>Cancel</b>) before you end your shift, so their cut is recorded correctly.
+</div>
+<div class="callout tip">
+  <span class="ct">That's it</span>
+  Once your queue is empty after ending, you're clocked out. The tablet returns to the staff list, ready for the next barber.
+</div>
+</section>
+
+<!-- ============ APPENDIX ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · BARBER GUIDE</span><span>Appendix A · Cheat-sheet</span></div>
+<div class="section-kicker">Appendix A</div>
+<h2 class="section">Button cheat-sheet &amp; tips</h2>
+
+<h3>A.1 The dots on the staff list</h3>
+<table class="ref">
+  <tr><th style="width:34%">Dot</th><th>Meaning</th></tr>
+  <tr><td class="field"><span class="dot g"></span> Green</td><td>On shift, free — no one waiting.</td></tr>
+  <tr><td class="field"><span class="dot a"></span> Amber</td><td>On shift, with customers in the queue.</td></tr>
+  <tr><td class="field"><span class="dot x"></span> Grey</td><td>Off shift — not started yet.</td></tr>
+</table>
+
+<h3>A.2 Every button, in one place</h3>
+<table class="ref">
+  <tr><th style="width:36%">Button</th><th>What it does</th></tr>
+  <tr><td class="field"><span class="btnchip out">Clock in →</span></td><td>Start your shift (pick services first).</td></tr>
+  <tr><td class="field"><span class="btnchip go">Open queue →</span></td><td>Open your chair when already on shift.</td></tr>
+  <tr><td class="field"><span class="btnchip go">Start shift →</span></td><td>Begin your shift after choosing services.</td></tr>
+  <tr><td class="field"><span class="btnchip go">Start next customer →</span></td><td>Bring the next waiting person into your chair.</td></tr>
+  <tr><td class="field"><span class="btnchip go">Done ✓</span></td><td>Finish the cut and check the customer out (counts for your pay).</td></tr>
+  <tr><td class="field"><span class="btnchip out">Set price</span></td><td>Lock in the price for a custom-service customer.</td></tr>
+  <tr><td class="field"><span class="btnchip out">+ Add charge</span> / <span class="btnchip out">− Reduce</span></td><td>Nudge a customer's price up or down.</td></tr>
+  <tr><td class="field"><span class="btnchip wa">Send WhatsApp receipt →</span></td><td>Text the customer their receipt (optional).</td></tr>
+  <tr><td class="field"><span class="btnchip out">☕ Take a break</span> / Continue shift</td><td>Pause / resume taking new customers.</td></tr>
+  <tr><td class="field"><span class="btnchip danger">Cancel</span> / ✕</td><td>Remove a customer without charging them.</td></tr>
+  <tr><td class="field"><span class="btnchip danger">End shift</span></td><td>Clock out for the day.</td></tr>
+</table>
+
+<h3>A.3 Quick tips</h3>
+<ul>
+  <li>Always pick <b>your own name</b> — your cuts and pay depend on it.</li>
+  <li>Serve in order: <b>Start next customer →</b>, cut, <b>Done ✓</b>, repeat.</li>
+  <li>Use <b>Done ✓</b> only for real, finished cuts. Use <b>Cancel</b> for no-shows.</li>
+  <li>Custom customer? <b>Set the price</b> before you can tap Done.</li>
+  <li>Going away for a bit? <b>Take a break</b> so no one new joins your line.</li>
+  <li>Don't worry about the <b>Admin ›</b> link — that's for the owner.</li>
+</ul>
+
+<div class="mini-foot">NOVYX BARBERSHOP · BARBER GUIDE (STAFF MODE) · v1.0 · JUNE 2026 · END OF DOCUMENT</div>
+</section>
+
+</body>
+</html>

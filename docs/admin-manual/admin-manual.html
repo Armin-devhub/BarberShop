@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Novyx Barbershop — Admin User Manual</title>
+<style>
+  :root{
+    --ink:#0F172A;
+    --body:#1F2937;
+    --muted:#64748B;
+    --subtle:#94A3B8;
+    --line:#E5E7EB;
+    --indigo:#6366F1;
+    --indigo-deep:#4F46E5;
+    --violet:#8B5CF6;
+    --emerald:#10B981;
+    --amber:#F59E0B;
+    --rose:#F43F5E;
+    --soft:#EEF0FE;
+    --paper:#FFFFFF;
+    --canvas:#F4F5F7;
+  }
+
+  *{ box-sizing:border-box; }
+
+  @page{
+    size:A4;
+    margin:18mm 16mm 18mm 16mm;
+  }
+  @page:first{ margin:0; }
+
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color:var(--body);
+    font-size:10.5pt;
+    line-height:1.55;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+
+  /* ---------- Cover ---------- */
+  .cover{
+    position:relative;
+    height:297mm;
+    width:100%;
+    background:linear-gradient(150deg,#4F46E5 0%, #6366F1 45%, #8B5CF6 100%);
+    color:#fff;
+    page-break-after:always;
+    overflow:hidden;
+  }
+  .cover .glow{
+    position:absolute; width:520px; height:520px; border-radius:50%;
+    background:rgba(255,255,255,0.12); filter:blur(8px);
+    top:-160px; right:-140px;
+  }
+  .cover .glow2{
+    position:absolute; width:300px; height:300px; border-radius:50%;
+    background:rgba(255,255,255,0.07);
+    bottom:-150px; right:-90px;
+  }
+  .cover-inner{
+    position:absolute; inset:0;
+    padding:40mm 26mm;
+    display:flex; flex-direction:column;
+  }
+  .brand-mark{
+    display:flex; align-items:center; gap:14px;
+  }
+  .diamond{
+    width:30px; height:30px; transform:rotate(45deg);
+    background:#fff; border-radius:7px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.18);
+  }
+  .brand-name{ font-size:20pt; font-weight:800; letter-spacing:-0.5px; }
+  .brand-tag{ font-size:9pt; letter-spacing:3px; opacity:0.85; margin-top:2px; }
+
+  .cover-title-block{ margin-top:auto; }
+  .cover-kicker{
+    font-size:11pt; font-weight:700; letter-spacing:4px;
+    text-transform:uppercase; opacity:0.85;
+  }
+  .cover-title{
+    font-size:42pt; font-weight:800; letter-spacing:-1.2px;
+    line-height:1.04; margin:10px 0 4px;
+  }
+  .cover-sub{ font-size:14pt; font-weight:400; opacity:0.92; max-width:120mm; }
+  .cover-rule{ height:3px; width:80px; background:#fff; border-radius:3px; margin:26px 0; opacity:0.9; }
+  .cover-meta{ font-size:10pt; opacity:0.9; }
+  .cover-meta b{ font-weight:700; }
+  .cover-foot{
+    margin-top:28px; font-size:8.5pt; letter-spacing:1px;
+    opacity:0.75; text-transform:uppercase;
+  }
+
+  /* ---------- Generic typography ---------- */
+  h1,h2,h3,h4{ color:var(--ink); font-weight:800; letter-spacing:-0.3px; }
+  h2.section{
+    font-size:20pt; margin:0 0 2px;
+    padding-top:2mm;
+  }
+  .section-kicker{
+    font-size:8.5pt; font-weight:800; letter-spacing:2.5px;
+    color:var(--indigo); text-transform:uppercase; margin-bottom:4px;
+  }
+  h3{ font-size:13pt; margin:18px 0 6px; }
+  h4{ font-size:11pt; margin:14px 0 4px; color:var(--indigo-deep); }
+  p{ margin:6px 0; }
+  ul,ol{ margin:6px 0 6px 0; padding-left:20px; }
+  li{ margin:3px 0; }
+  b,strong{ color:var(--ink); }
+  code, .kbd{
+    background:#EEF0F3; color:#0F172A; border-radius:4px;
+    padding:1px 6px; font-family:"Consolas","SF Mono",monospace; font-size:9pt;
+  }
+
+  .lead{ font-size:11pt; color:var(--body); }
+
+  /* page-break helpers */
+  .page-break{ page-break-before:always; }
+  .avoid-break{ page-break-inside:avoid; }
+  section.screen{ page-break-before:always; }
+
+  /* ---------- Header band on content pages ---------- */
+  .doc-head{
+    display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1px solid var(--line); padding-bottom:6px; margin-bottom:14px;
+    color:var(--subtle); font-size:8pt; letter-spacing:1.5px; text-transform:uppercase;
+  }
+  .doc-head .dh-brand{ font-weight:800; color:var(--indigo); }
+
+  /* ---------- Table of contents ---------- */
+  .toc-list{ list-style:none; margin:0; padding:0; }
+  .toc-list li{
+    display:flex; align-items:baseline; gap:10px;
+    padding:7px 0; border-bottom:1px dotted var(--line);
+    font-size:10.5pt;
+  }
+  .toc-num{
+    color:var(--indigo); font-weight:800; width:30px; flex:none;
+    font-variant-numeric:tabular-nums;
+  }
+  .toc-label{ color:var(--ink); font-weight:600; }
+  .toc-sub .toc-label{ font-weight:500; color:var(--body); }
+  .toc-sub{ padding-left:34px; }
+
+  /* ---------- Figures ---------- */
+  figure{
+    margin:14px 0 6px; page-break-inside:avoid;
+  }
+  figure img{
+    width:100%; display:block;
+    border:1px solid var(--line); border-radius:8px;
+    box-shadow:0 4px 14px rgba(15,23,42,0.08);
+  }
+  figure img.shot-narrow{ width:74%; margin:0 auto; }
+  figcaption{
+    font-size:8.5pt; color:var(--muted); margin-top:6px;
+    text-align:center; font-style:italic;
+  }
+
+  /* ---------- Callouts ---------- */
+  .callout{
+    border-radius:8px; padding:10px 14px; margin:12px 0;
+    font-size:9.7pt; page-break-inside:avoid;
+    border-left:4px solid var(--indigo); background:var(--soft);
+  }
+  .callout .ct{
+    font-weight:800; font-size:8.5pt; letter-spacing:1.2px;
+    text-transform:uppercase; display:block; margin-bottom:2px; color:var(--indigo-deep);
+  }
+  .callout.tip{ border-left-color:var(--emerald); background:#E7F8F1; }
+  .callout.tip .ct{ color:#0B7A55; }
+  .callout.warn{ border-left-color:var(--rose); background:#FEECEF; }
+  .callout.warn .ct{ color:#B4123A; }
+  .callout.note{ border-left-color:var(--amber); background:#FEF4E6; }
+  .callout.note .ct{ color:#9A6608; }
+
+  /* ---------- Steps ---------- */
+  ol.steps{ counter-reset:step; list-style:none; padding-left:0; margin:10px 0; }
+  ol.steps > li{
+    position:relative; padding-left:34px; margin:9px 0; page-break-inside:avoid;
+  }
+  ol.steps > li::before{
+    counter-increment:step; content:counter(step);
+    position:absolute; left:0; top:-1px;
+    width:22px; height:22px; border-radius:50%;
+    background:var(--indigo); color:#fff;
+    font-size:9pt; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* ---------- Reference tables ---------- */
+  table.ref{
+    width:100%; border-collapse:collapse; margin:12px 0; font-size:9.6pt;
+    page-break-inside:avoid;
+  }
+  table.ref th{
+    background:#0F172A; color:#fff; text-align:left;
+    padding:7px 10px; font-size:8.5pt; letter-spacing:0.6px; text-transform:uppercase;
+  }
+  table.ref td{
+    border-bottom:1px solid var(--line); padding:7px 10px; vertical-align:top;
+  }
+  table.ref tr:nth-child(even) td{ background:#FAFAFB; }
+  table.ref td.field{ font-weight:700; color:var(--ink); white-space:nowrap; }
+
+  /* ---------- Pills ---------- */
+  .pill{
+    display:inline-block; padding:1px 8px; border-radius:999px;
+    font-size:8pt; font-weight:700; letter-spacing:0.4px; vertical-align:middle;
+  }
+  .pill.ok{ background:#E7F8F1; color:#0B7A55; }
+  .pill.off{ background:#FEECEF; color:#B4123A; }
+  .pill.idx{ background:var(--soft); color:var(--indigo-deep); }
+
+  .purpose{
+    background:var(--canvas); border:1px solid var(--line); border-radius:8px;
+    padding:10px 14px; margin:10px 0 4px; font-size:10pt;
+  }
+  .purpose b{ color:var(--indigo-deep); }
+
+  .mini-foot{
+    margin-top:30px; padding-top:8px; border-top:1px solid var(--line);
+    font-size:8pt; color:var(--subtle); text-align:center; letter-spacing:1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="glow"></div>
+  <div class="glow2"></div>
+  <div class="cover-inner">
+    <div class="brand-mark">
+      <div class="diamond"></div>
+      <div>
+        <div class="brand-name">Novyx</div>
+        <div class="brand-tag">BARBERSHOP</div>
+      </div>
+    </div>
+
+    <div class="cover-title-block">
+      <div class="cover-kicker">Administrator Guide</div>
+      <div class="cover-title">Admin<br>User Manual</div>
+      <div class="cover-sub">A complete walkthrough of the Novyx Barbershop admin dashboard — managing your catalog, staff, payroll, attendance and reports.</div>
+      <div class="cover-rule"></div>
+      <div class="cover-meta">
+        <b>Product:</b> Novyx Barbershop — Queue &amp; Booking System<br>
+        <b>Audience:</b> Shop owner / administrator<br>
+        <b>Version:</b> 1.1 &nbsp;·&nbsp; <b>Issued:</b> June 2026
+      </div>
+      <div class="cover-foot">Confidential · For shop management use</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ INTRO + TOC ============ -->
+<div class="doc-head"><span class="dh-brand">NOVYX · ADMIN MANUAL</span><span>Introduction</span></div>
+
+<div class="section-kicker">Welcome</div>
+<h2 class="section">About this manual</h2>
+<p class="lead">This manual explains everything an administrator can do in the Novyx Barbershop admin dashboard. The admin area is where you run the business behind the scenes: the menu of services and products customers see, the staff who work the floor, their pay and attendance, and the reports that tell you how the shop is doing.</p>
+
+<p>Each chapter covers one screen. You'll find a short description of what the screen is for, an annotated screenshot, step-by-step instructions for the common tasks, and a field-by-field reference table so nothing is left to guesswork. Look out for the coloured callout boxes — they flag tips, things to be careful about, and important notes.</p>
+
+<div class="callout">
+  <span class="ct">Who can open the admin area</span>
+  The admin dashboard is restricted to <b>administrator</b> accounts only. Barbers use the separate, login-free "staff mode" to run the queue and never see these screens. See <b>Chapter 1 — Getting Started</b> for how logging in works.
+</div>
+
+<h3>How the app is organised</h3>
+<p>The left sidebar groups every screen into four areas. This manual follows the same order:</p>
+<ul>
+  <li><b>Overview</b> — the Dashboard (your daily snapshot).</li>
+  <li><b>Catalog</b> — Services, Products and Discounts (what customers can buy).</li>
+  <li><b>People</b> — Staff, Attendance and Pay (your team and their wages).</li>
+  <li><b>System</b> — Reports, the QR Code, and Settings (year-end exports, the customer QR, and the live/test switch).</li>
+</ul>
+
+<div class="page-break"></div>
+<div class="doc-head"><span class="dh-brand">NOVYX · ADMIN MANUAL</span><span>Contents</span></div>
+<div class="section-kicker">Contents</div>
+<h2 class="section">Table of contents</h2>
+
+<ol class="toc-list" style="counter-reset:none;">
+  <li><span class="toc-num">1</span><span class="toc-label">Getting Started — Logging in &amp; navigation</span></li>
+  <li><span class="toc-num">2</span><span class="toc-label">Dashboard — Your daily snapshot</span></li>
+  <li><span class="toc-num">3</span><span class="toc-label">Services — The cuts &amp; treatments menu</span></li>
+  <li><span class="toc-num">4</span><span class="toc-label">Products — Pomade &amp; care inventory</span></li>
+  <li><span class="toc-num">5</span><span class="toc-label">Discounts — Promo codes</span></li>
+  <li><span class="toc-num">6</span><span class="toc-label">Staff — Barbers &amp; admins</span></li>
+  <li><span class="toc-num">7</span><span class="toc-label">Attendance — Shifts &amp; breaks</span></li>
+  <li><span class="toc-num">8</span><span class="toc-label">Pay — Payroll, commission &amp; salaries</span></li>
+  <li><span class="toc-num">9</span><span class="toc-label">Reports — Year-end export &amp; archive</span></li>
+  <li><span class="toc-num">10</span><span class="toc-label">QR Code — The customer queue QR</span></li>
+  <li><span class="toc-num">11</span><span class="toc-label">Settings — Database mode (Live / Test)</span></li>
+  <li><span class="toc-num">A</span><span class="toc-label">Quick reference &amp; glossary</span></li>
+</ol>
+
+<!-- ============ 1. GETTING STARTED ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · ADMIN MANUAL</span><span>1 · Getting Started</span></div>
+<div class="section-kicker">Chapter 1</div>
+<h2 class="section">Getting Started</h2>
+
+<div class="purpose"><b>Purpose:</b> Sign in to the admin dashboard and find your way around the sidebar.</div>
+
+<h3>1.1 Logging in</h3>
+<p>Open the app and you'll reach the sign-in screen. It is shared by admins and staff, but only an administrator's email and password will open the admin dashboard.</p>
+
+<figure>
+  <img class="shot-narrow" src="screenshots/00-login.png" alt="Login screen">
+  <figcaption>The sign-in screen — "Admins and staff only."</figcaption>
+</figure>
+
+<ol class="steps">
+  <li>Enter your administrator <b>Email</b> in the first field.</li>
+  <li>Enter your <b>Password</b>. Tap <b>Show</b> to reveal what you typed if you want to double-check it.</li>
+  <li>Tap <b>Sign in</b>. You'll land on the Dashboard.</li>
+</ol>
+
+<p>The two links below the button are not part of normal admin sign-in: <b>Create staff account</b> is used when first setting a person up, and <b>← Back to staff mode</b> returns to the login-free barber queue.</p>
+
+<div class="callout warn">
+  <span class="ct">Security — you log in every time</span>
+  For safety, the admin session is <b>never remembered</b>. The moment you leave the admin area — navigating away, closing the tab, or going back to staff mode — you are signed out automatically. This means you must enter your password each time you open the admin dashboard. It is intentional, so an unattended iPad can't expose your business data.
+</div>
+
+<h3>1.2 The sidebar &amp; navigation</h3>
+<p>Every admin screen shares the same left sidebar. Screens are grouped under four headings, and your account sits at the bottom with a sign-out button.</p>
+
+<table class="ref">
+  <tr><th style="width:22%">Group</th><th style="width:28%">Screens</th><th>What you manage there</th></tr>
+  <tr><td class="field">Overview</td><td>Dashboard</td><td>Today's revenue, queue and per-barber performance, plus this month's charts.</td></tr>
+  <tr><td class="field">Catalog</td><td>Services · Products · Discounts</td><td>Everything a customer can choose or pay for.</td></tr>
+  <tr><td class="field">People</td><td>Staff · Attendance · Pay</td><td>Your team, the hours they work, and their wages.</td></tr>
+  <tr><td class="field">System</td><td>Reports · QR Code · Settings</td><td>Annual PDF exports, the customer-facing QR code, and the live/test database switch.</td></tr>
+</table>
+
+<div class="callout tip">
+  <span class="ct">Tip — signing out</span>
+  To leave safely, tap the <b>sign-out icon</b> next to your name at the bottom of the sidebar. You'll be returned to the login screen.
+</div>
+</section>
+
+<!-- ============ 2. DASHBOARD ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · ADMIN MANUAL</span><span>2 · Dashboard</span></div>
+<div class="section-kicker">Chapter 2</div>
+<h2 class="section">Dashboard</h2>
+
+<div class="purpose"><b>Purpose:</b> A live, at-a-glance view of how the shop is doing today and this month. This screen is read-only — there's nothing to set up here, just numbers to read.</div>
+
+<figure>
+  <img src="screenshots/01-dashboard.png" alt="Admin dashboard">
+  <figcaption>The Dashboard — today's revenue, KPI tiles, and the month's analytics charts.</figcaption>
+</figure>
+
+<h3>2.1 Today, at the top</h3>
+<ul>
+  <li><b>Revenue today</b> — the large purple card. The <span class="pill idx">LIVE</span> tag and the small spark-line show it updates in real time as cuts are completed. The chip beneath compares today to yesterday.</li>
+  <li><b>Served / In queue / On shift</b> — three tiles: customers finished today, customers currently waiting, and barbers clocked in right now.</li>
+</ul>
+
+<h3>2.2 This month</h3>
+<p>Below the date band labelled <b>This Month</b>, three tiles summarise the month so far — <b>Revenue</b>, <b>Cuts</b> (customers served) and <b>Avg ticket</b> (average spend per customer). Under them sits a grid of charts:</p>
+<table class="ref">
+  <tr><th style="width:34%">Chart</th><th>What it tells you</th></tr>
+  <tr><td class="field">Revenue · Last 7 Days</td><td>The daily takings trend across the past week.</td></tr>
+  <tr><td class="field">Revenue · Last 6 Months</td><td>Month-by-month revenue, in Ringgit.</td></tr>
+  <tr><td class="field">Busiest Hours</td><td>Which times of day bring the most customers.</td></tr>
+  <tr><td class="field">Cuts by Weekday</td><td>Which days of the week are busiest.</td></tr>
+  <tr><td class="field">Service Mix</td><td>The share of revenue each service contributes.</td></tr>
+  <tr><td class="field">Completion · This Month</td><td>Completed vs cancelled jobs, as a percentage.</td></tr>
+  <tr><td class="field">Top Barbers · Revenue</td><td>Your highest-earning barbers, ranked.</td></tr>
+  <tr><td class="field">Discount Usage</td><td>How many cuts used a promo code vs paid full price.</td></tr>
+</table>
+
+<h3>2.3 Per barber, today</h3>
+<p>At the bottom, one card per barber shows whether they're <span class="pill ok">On shift</span> or <b>Off</b>, plus their <b>Cuts</b>, customers <b>In queue</b> and <b>Revenue</b> for the day.</p>
+
+<div class="callout tip">
+  <span class="ct">Tip — pull to refresh</span>
+  The dashboard refreshes itself live, but you can always pull the page down to force an immediate refresh. The "Updates live" note at the very bottom confirms the live connection.
+</div>
+</section>
+
+<!-- ============ 3. SERVICES ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · ADMIN MANUAL</span><span>3 · Services</span></div>
+<div class="section-kicker">Chapter 3 · Catalog</div>
+<h2 class="section">Services</h2>
+
+<div class="purpose"><b>Purpose:</b> Define the menu of cuts and treatments customers can pick from the queue — each with a price and an expected duration.</div>
+
+<figure>
+  <img src="screenshots/02-services.png" alt="Services list">
+  <figcaption>The Services list — name, duration, status and price for each offering.</figcaption>
+</figure>
+
+<p>The header shows how many services are offered. Each row lists the service name, its approximate duration (e.g. <code>~20 min</code>), an <span class="pill ok">Active</span> or <span class="pill off">Inactive</span> status, and the price. Inactive services appear dimmed and are hidden from customers.</p>
+
+<h3>3.1 Adding or editing a service</h3>
+<p>Tap <b>Add</b> (top-right) to create one, or tap any existing row to edit it. Both open the same editor, which shows a live <b>preview</b> of how the row will look as you type.</p>
+
+<figure>
+  <img class="shot-narrow" src="screenshots/02b-services-add-modal.png" alt="Add service form">
+  <figcaption>The "Add service" editor with a live preview at the top.</figcaption>
+</figure>
+
+<ol class="steps">
+  <li>Enter the <b>Name</b> (for example, "Buzz Cut").</li>
+  <li>Enter the <b>Price</b> in Ringgit.</li>
+  <li>Pick a <b>Duration</b> — tap one of the quick chips (15, 30, 45, 60) or type a custom number of minutes.</li>
+  <li>Leave <b>Active</b> on so it appears in the queue, or switch it off to hide it.</li>
+  <li>Tap <b>Save</b>. Tap <b>Cancel</b> to discard.</li>
+</ol>
+
+<table class="ref">
+  <tr><th style="width:24%">Field</th><th>Notes</th></tr>
+  <tr><td class="field">Name</td><td>Required. Shown to customers in the queue.</td></tr>
+  <tr><td class="field">Price (RM)</td><td>Required. The amount charged for this service.</td></tr>
+  <tr><td class="field">Duration (minutes)</td><td>Quick chips for 15 / 30 / 45 / 60, or type any custom value.</td></tr>
+  <tr><td class="field">Active</td><td>"Hidden from the queue when off." Use this to retire a service without deleting it.</td></tr>
+</table>
+</section>
+
+<!-- ============ 4. PRODUCTS ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · ADMIN MANUAL</span><span>4 · Products</span></div>
+<div class="section-kicker">Chapter 4 · Catalog</div>
+<h2 class="section">Products</h2>
+
+<div class="purpose"><b>Purpose:</b> Manage the counter products you sell alongside haircuts — pomade, wax and other care items.</div>
+
+<figure>
+  <img src="screenshots/03-products.png" alt="Products list">
+  <figcaption>The Products list — each item with its price and stock status.</figcaption>
+</figure>
+
+<p>Products work just like services, but with a simpler form. Each row shows the product name, price, and a green <span class="pill ok">In stock</span> or red <span class="pill off">Out of stock</span> indicator. Out-of-stock items are dimmed and hidden from the counter.</p>
+
+<h3>4.1 Adding or editing a product</h3>
+<ol class="steps">
+  <li>Tap <b>Add</b>, or tap an existing product to edit it.</li>
+  <li>Enter the <b>Name</b> (for example, "Pomade").</li>
+  <li>Enter the <b>Price</b> in Ringgit.</li>
+  <li>Set <b>In stock</b> on or off.</li>
+  <li>Tap <b>Save</b>.</li>
+</ol>
+
+<table class="ref">
+  <tr><th style="width:24%">Field</th><th>Notes</th></tr>
+  <tr><td class="field">Name</td><td>Required. The product's display name.</td></tr>
+  <tr><td class="field">Price (RM)</td><td>Required. Selling price.</td></tr>
+  <tr><td class="field">In stock</td><td>"Hidden from the counter when off." Switch off when you run out, switch back on when restocked.</td></tr>
+</table>
+</section>
+
+<!-- ============ 5. DISCOUNTS ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · ADMIN MANUAL</span><span>5 · Discounts</span></div>
+<div class="section-kicker">Chapter 5 · Catalog</div>
+<h2 class="section">Discounts</h2>
+
+<div class="purpose"><b>Purpose:</b> Create promo codes customers can apply for a percentage off — optionally limited by a number of uses and an expiry date.</div>
+
+<figure>
+  <img src="screenshots/04-discounts.png" alt="Discounts list">
+  <figcaption>The Promo Codes list — code, status, usage and the discount amount.</figcaption>
+</figure>
+
+<p>Each row shows the code, a status pill, how many times it's been used, its expiry, and the percentage off. The status is automatic:</p>
+<ul>
+  <li><span class="pill ok">Active</span> — switched on, not expired, uses remaining.</li>
+  <li><span class="pill off">Expired</span> — past its expiry date.</li>
+  <li><span class="pill off">Used up</span> — reached its maximum number of uses.</li>
+  <li><span class="pill off">Inactive</span> — manually switched off.</li>
+</ul>
+
+<h3>5.1 Adding or editing a code</h3>
+<figure>
+  <img class="shot-narrow" src="screenshots/04b-discounts-add-modal.png" alt="Add code form">
+  <figcaption>The "Add code" editor.</figcaption>
+</figure>
+
+<table class="ref">
+  <tr><th style="width:30%">Field</th><th>Notes</th></tr>
+  <tr><td class="field">Code</td><td>Required. Automatically forced to UPPERCASE with spaces removed (e.g. <code>WELCOME10</code>).</td></tr>
+  <tr><td class="field">Percent off</td><td>Required. A whole number from 1 to 100.</td></tr>
+  <tr><td class="field">Max uses</td><td>Optional. Leave blank for unlimited uses; otherwise a positive number.</td></tr>
+  <tr><td class="field">Expires</td><td>Optional. Date in <code>YYYY-MM-DD</code> format; leave blank for no expiry.</td></tr>
+  <tr><td class="field">Active</td><td>"Customers can't apply it when off."</td></tr>
+</table>
+
+<div class="callout note">
+  <span class="ct">Note</span>
+  A code only counts as truly usable when it is <b>Active</b>, <b>not expired</b>, and <b>has uses left</b>. Turning Active off is the quickest way to pause a promotion without losing its usage history.
+</div>
+</section>
+
+<!-- ============ 6. STAFF ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · ADMIN MANUAL</span><span>6 · Staff</span></div>
+<div class="section-kicker">Chapter 6 · People</div>
+<h2 class="section">Staff</h2>
+
+<div class="purpose"><b>Purpose:</b> Create and manage every person in the shop — barbers and fellow admins — including their login, role, and how they're paid.</div>
+
+<figure>
+  <img src="screenshots/05-staff.png" alt="Staff list">
+  <figcaption>The Manage Barbers list — each person with role, contact details and employment type.</figcaption>
+</figure>
+
+<p>Each card shows an avatar, the person's name, an <b>Admin</b> or <b>Barber</b> role, their email and phone, and their employment type. An <span class="pill off">Inactive</span> badge appears if their account is switched off.</p>
+
+<h3>6.1 Adding a new staff member</h3>
+<p>Tap <b>Add</b> to open the staff editor. Creating someone here provisions both their staff record and their login account in one step.</p>
+
+<figure>
+  <img class="shot-narrow" src="screenshots/05b-staff-add-modal.png" alt="Add staff form">
+  <figcaption>The "Add staff" editor with a live preview card.</figcaption>
+</figure>
+
+<table class="ref">
+  <tr><th style="width:28%">Field</th><th>Notes</th></tr>
+  <tr><td class="field">Name</td><td>Required.</td></tr>
+  <tr><td class="field">Phone</td><td>Required. Used for contact (Malaysia format, e.g. 60123456789).</td></tr>
+  <tr><td class="field">Email</td><td>Required when creating. This becomes their login. <b>It cannot be changed afterwards.</b></td></tr>
+  <tr><td class="field">Temporary password</td><td>Required when creating; at least 6 characters. Hand this to the new staff member — they sign in with it.</td></tr>
+  <tr><td class="field">Role</td><td>Choose <b>Barber</b> or <b>Admin</b>. Admins can open this dashboard; barbers cannot.</td></tr>
+  <tr><td class="field">Employment type</td><td>Choose <b>Full-time</b> (base salary + commission) or <b>Commission</b> (commission only). This drives how Pay is calculated.</td></tr>
+  <tr><td class="field">Active</td><td>"Inactive staff can't start a shift."</td></tr>
+</table>
+
+<h3>6.2 Editing a staff member</h3>
+<p>Tap any person to edit them. The form is the same, except the <b>Email is locked</b> (it's tied to their login) and there's no password field. To change role, employment type, phone, or active status, edit and tap <b>Save</b>.</p>
+
+<div class="callout warn">
+  <span class="ct">Important — email is permanent</span>
+  Because the email address is the person's login identity, it can't be edited once the account exists. If someone genuinely needs a different email, create a new staff record for them.
+</div>
+</section>
+
+<!-- ============ 7. ATTENDANCE ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · ADMIN MANUAL</span><span>7 · Attendance</span></div>
+<div class="section-kicker">Chapter 7 · People</div>
+<h2 class="section">Attendance</h2>
+
+<div class="purpose"><b>Purpose:</b> See exactly when each barber worked — their shifts, breaks, hours and the customers they served — across a whole month or on any single day.</div>
+
+<figure>
+  <img src="screenshots/06-attendance.png" alt="Attendance calendar">
+  <figcaption>The month view — pick a barber, then read the colour-coded calendar.</figcaption>
+</figure>
+
+<h3>7.1 Choosing what to view</h3>
+<ol class="steps">
+  <li>Tap a <b>barber's pill</b> at the top to choose whose attendance to view.</li>
+  <li>Use the <b>‹ ›</b> arrows to move between months; tap <b>Today</b> to jump back to the current month.</li>
+  <li>Read the summary: <b>Days worked</b>, <b>Net worked</b> (total hours after breaks) and <b>Customers</b> served that month.</li>
+</ol>
+<p>On the calendar, <b>green</b> days are days the barber worked and <b>red</b> days are days with no shift. Today is marked with a small dot.</p>
+
+<h3>7.2 Reading a single day</h3>
+<p>Tap any day to open its detail card, which breaks down that shift completely.</p>
+
+<figure>
+  <img src="screenshots/06b-attendance-day-detail.png" alt="Attendance day detail">
+  <figcaption>A day's detail — net hours, an activity timeline, breaks and totals.</figcaption>
+</figure>
+
+<table class="ref">
+  <tr><th style="width:34%">Item</th><th>Meaning</th></tr>
+  <tr><td class="field">Net worked (hero)</td><td>Hours actually worked that day, with breaks removed. Shows "still on shift" if the barber hasn't clocked out.</td></tr>
+  <tr><td class="field">Shift activity</td><td>A timeline across the day — <b>green</b> while working, <b>red</b> during breaks.</td></tr>
+  <tr><td class="field">Breaks</td><td>Each break listed as start–end and its length.</td></tr>
+  <tr><td class="field">Total shift time</td><td>Clock-in to clock-out, before breaks.</td></tr>
+  <tr><td class="field">Customers served / Revenue</td><td>What the barber produced that day.</td></tr>
+  <tr><td class="field">First in · Last out</td><td>The first clock-in and last clock-out times.</td></tr>
+</table>
+</section>
+
+<!-- ============ 8. PAY ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · ADMIN MANUAL</span><span>8 · Pay</span></div>
+<div class="section-kicker">Chapter 8 · People</div>
+<h2 class="section">Pay</h2>
+
+<div class="purpose"><b>Purpose:</b> Work out and track what each barber is owed for a month — commission and base salary — and mark them as paid.</div>
+
+<figure>
+  <img src="screenshots/07-pay.png" alt="Pay screen">
+  <figcaption>The Payroll screen — month summary and per-barber totals.</figcaption>
+</figure>
+
+<h3>8.1 The two tabs</h3>
+<ul>
+  <li><b>Totals</b> — the default view: each barber's commission, base salary and total owed for the selected month, plus a shop-wide summary.</li>
+  <li><b>Earnings</b> — a line-by-line list of every commission a barber earned, which you can filter by barber.</li>
+</ul>
+<p>Use the <b>‹ ›</b> arrows to change month; <b>This month</b> jumps back to the current one.</p>
+
+<h3>8.2 The month summary</h3>
+<p>The summary card shows <b>Total revenue</b>, <b>Commissions</b> owed, <b>Base salaries</b> owed, and the resulting <b>Net profit</b>. The formula is printed right on the card:</p>
+<div class="callout">
+  <span class="ct">Net profit formula</span>
+  <b>Net profit = revenue − commissions − base salaries</b> (for the month). It can be negative early in the month before enough revenue has come in to cover salaries.
+</div>
+
+<h3>8.3 Marking a barber as paid</h3>
+<ol class="steps">
+  <li>Find the barber's card for the selected month.</li>
+  <li>Tap the <span class="pill off">Due</span> pill — it flips to <span class="pill ok">Paid</span>. Tap again to undo. This is tracked per barber, per month.</li>
+</ol>
+
+<h3>8.4 Adjusting a full-time barber's base salary</h3>
+<p>On a full-time barber's card, tap the <b>Base salary</b> row to open the editor. You have three choices:</p>
+<table class="ref">
+  <tr><th style="width:40%">Option</th><th>Effect</th></tr>
+  <tr><td class="field">Save for this month only</td><td>Applies the amount as a one-off override for the selected month.</td></tr>
+  <tr><td class="field">Set as standard (all months)</td><td>Makes this the barber's permanent monthly salary and clears the month override.</td></tr>
+  <tr><td class="field">Reset this month to standard</td><td>Removes a one-off override and falls back to the standard (only shown when an override exists).</td></tr>
+</table>
+
+<h3>8.5 Commission rates (Pay settings)</h3>
+<p>Tap the <b>gear icon</b> at the top-right to open <b>Pay settings</b>, which set the shop-wide defaults.</p>
+
+<figure>
+  <img class="shot-narrow" src="screenshots/07b-pay-settings-modal.png" alt="Pay settings">
+  <figcaption>Pay settings — base salary and commission percentages.</figcaption>
+</figure>
+
+<table class="ref">
+  <tr><th style="width:42%">Setting</th><th>Notes</th></tr>
+  <tr><td class="field">Full-time base salary (monthly)</td><td>The default monthly salary for full-time barbers.</td></tr>
+  <tr><td class="field">Full-time commission</td><td>Commission % for full-time barbers (0–100).</td></tr>
+  <tr><td class="field">Commission-only</td><td>Commission % for commission-only barbers (0–100).</td></tr>
+</table>
+
+<div class="callout note">
+  <span class="ct">Note</span>
+  Changing commission rates only affects <b>future</b> commissions — earnings already recorded keep the rate that applied at the time.
+</div>
+</section>
+
+<!-- ============ 9. REPORTS ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · ADMIN MANUAL</span><span>9 · Reports</span></div>
+<div class="section-kicker">Chapter 9 · System</div>
+<h2 class="section">Reports</h2>
+
+<div class="purpose"><b>Purpose:</b> Review a full year of figures, download a polished PDF annual report, and — once you've saved that report — archive the year out of the database.</div>
+
+<figure>
+  <img src="screenshots/08-reports.png" alt="Reports screen">
+  <figcaption>The Export &amp; Archive screen — the year summary and per-barber breakdown.</figcaption>
+</figure>
+
+<h3>9.1 Reviewing a year</h3>
+<p>Use the <b>‹ ›</b> arrows to pick a year (you can't go past the current one). The <b>Records in [year]</b> card totals everything: customers served, revenue, net profit, commission and salary (both what should be paid and what was paid), plus counts of queue entries, shifts and salary payments. Below it, a card per barber breaks the same figures down per person.</p>
+
+<h3>9.2 Generating the PDF report</h3>
+<ol class="steps">
+  <li>Select the year you want.</li>
+  <li>Tap <b>Generate PDF report for [year]</b>.</li>
+  <li>The app builds a branded PDF — summary, per-barber breakdown, salary payments, attendance, shifts and queue entries — and opens the print/share dialog so you can save it.</li>
+</ol>
+
+<h3>9.3 Archiving a year (Danger zone)</h3>
+<div class="callout warn">
+  <span class="ct">Danger zone — this permanently deletes data</span>
+  The <b>Delete [year] from database</b> button removes that year's queue entries, earnings, shifts and salary payments. It does <b>not</b> touch your catalog (services, products, discounts) or staff. <b>Always generate and save the PDF first</b> — once deleted, the detailed records are gone.
+</div>
+<ol class="steps">
+  <li>Generate and save the PDF for the year (section 9.2).</li>
+  <li>Tap <b>Delete [year] from database</b>.</li>
+  <li>Read the confirmation dialog carefully, then tap <b>Delete</b> to confirm (or <b>Cancel</b> to stop).</li>
+</ol>
+</section>
+
+<!-- ============ 10. QR CODE ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · ADMIN MANUAL</span><span>10 · QR Code</span></div>
+<div class="section-kicker">Chapter 10 · System</div>
+<h2 class="section">QR Code</h2>
+
+<div class="purpose"><b>Purpose:</b> Show and print the QR code customers scan to open the queue page on their phone and join the line.</div>
+
+<figure>
+  <img src="screenshots/10-qr.png" alt="QR Code screen">
+  <figcaption>The Customer Queue QR code, with download, copy and edit options.</figcaption>
+</figure>
+
+<p>This screen displays a ready-to-print QR code that points at your customer queue website. Stick it on the counter or window — anyone who scans it lands straight on the page where they join the queue.</p>
+
+<h3>10.1 Sharing the QR code</h3>
+<table class="ref">
+  <tr><th style="width:26%">Action</th><th>What it does</th></tr>
+  <tr><td class="field">Download PNG</td><td>Saves the QR code as an image file you can print or send to a designer. (Use the admin app in a web browser to download.)</td></tr>
+  <tr><td class="field">Open</td><td>Opens the customer queue page itself, so you can see exactly what a customer sees after scanning.</td></tr>
+  <tr><td class="field">Link pill</td><td>Tap the address under the code to copy the customer link to your clipboard.</td></tr>
+</table>
+
+<h3>10.2 Changing where the QR points</h3>
+<p>The <b>Destination URL</b> card controls the address the QR opens. It already points at your live customer site, so you normally never need to touch it.</p>
+<ol class="steps">
+  <li>Edit the address in the <b>Destination URL</b> field.</li>
+  <li>Tap <b>Save &amp; regenerate</b> — the QR code redraws to match the new address.</li>
+  <li>To undo, tap <b>Reset to default</b> to return to the standard customer site.</li>
+</ol>
+
+<div class="callout warn">
+  <span class="ct">Important — reprint after you change the link</span>
+  Changing the destination produces a <b>new</b> QR code. Any codes you already printed will still point at the old address, so download and reprint whenever you change this. Only change it if your customer site genuinely moves to a new address (for example, a custom domain).
+</div>
+
+<div class="callout tip">
+  <span class="ct">Tip</span>
+  Print the code large and at eye level near the entrance or counter. The clearer it is, the easier it is for customers to scan and join the queue themselves.
+</div>
+</section>
+
+<!-- ============ 11. SETTINGS ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · ADMIN MANUAL</span><span>11 · Settings</span></div>
+<div class="section-kicker">Chapter 11 · System</div>
+<h2 class="section">Settings — Database Mode</h2>
+
+<div class="purpose"><b>Purpose:</b> Switch the entire system — both this app and the customer-facing website — between the <b>Live</b> (real) database and the <b>Test</b> (practice) database.</div>
+
+<figure>
+  <img src="screenshots/09-settings.png" alt="Settings screen">
+  <figcaption>Database Mode — the current backend and the switch options.</figcaption>
+</figure>
+
+<p>This is one of the most powerful switches in the app. <b>Live</b> holds your real customers, revenue and staff. <b>Test</b> is a safe sandbox for practising or training — nothing there affects your real numbers. The status card shows which one is active right now (a green dot for Live, grey for Test).</p>
+
+<h3>11.1 Switching the backend</h3>
+<ol class="steps">
+  <li>Under "Switch to", tap the <b>Switch →</b> button on the option you want (the current one is greyed out).</li>
+  <li>A confirmation appears: <b>⚠ Switch to Live / Test?</b> Read it — the change affects <b>everyone</b> using the system.</li>
+  <li>Tap <b>Switch</b> to confirm. You'll be <b>signed out</b> (the old session belongs to the previous database) and the app reloads. Log back in to continue.</li>
+</ol>
+
+<div class="callout warn">
+  <span class="ct">Important — this affects every device</span>
+  Switching the database changes what every staff member and every customer sees, not just your screen. Only switch to <b>Live</b> when you're ready to take real customers, and only switch to <b>Test</b> when you intend to stop using real data. When in doubt, leave it where it is.
+</div>
+</section>
+
+<!-- ============ APPENDIX ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · ADMIN MANUAL</span><span>Appendix A · Reference</span></div>
+<div class="section-kicker">Appendix A</div>
+<h2 class="section">Quick reference &amp; glossary</h2>
+
+<h3>A.1 "I want to…" quick index</h3>
+<table class="ref">
+  <tr><th style="width:52%">Task</th><th>Go to</th></tr>
+  <tr><td>Add or change a haircut and its price</td><td>Services (Ch.3)</td></tr>
+  <tr><td>Mark a product as out of stock</td><td>Products (Ch.4)</td></tr>
+  <tr><td>Launch a promo code</td><td>Discounts (Ch.5)</td></tr>
+  <tr><td>Add a new barber and give them a login</td><td>Staff (Ch.6)</td></tr>
+  <tr><td>Check how many hours a barber worked</td><td>Attendance (Ch.7)</td></tr>
+  <tr><td>Work out wages and mark someone paid</td><td>Pay (Ch.8)</td></tr>
+  <tr><td>Change commission percentages</td><td>Pay → gear icon (Ch.8.5)</td></tr>
+  <tr><td>Download a year-end report</td><td>Reports (Ch.9.2)</td></tr>
+  <tr><td>Print the QR code customers scan to join the queue</td><td>QR Code (Ch.10)</td></tr>
+  <tr><td>Move from practice data to real customers</td><td>Settings (Ch.11)</td></tr>
+</table>
+
+<h3>A.2 Glossary</h3>
+<table class="ref">
+  <tr><th style="width:26%">Term</th><th>Meaning</th></tr>
+  <tr><td class="field">Active / Inactive</td><td>Whether a service, product, code or staff member is currently in use. Inactive items are hidden but not deleted.</td></tr>
+  <tr><td class="field">Commission</td><td>A percentage of what a customer paid, earned by the barber who did the cut.</td></tr>
+  <tr><td class="field">Full-time</td><td>A barber paid a fixed base salary <i>plus</i> commission.</td></tr>
+  <tr><td class="field">Commission-only</td><td>A barber paid commission alone, with no base salary.</td></tr>
+  <tr><td class="field">Net profit</td><td>Revenue minus commissions minus base salaries for the period.</td></tr>
+  <tr><td class="field">Net worked</td><td>Hours on shift after break time is removed.</td></tr>
+  <tr><td class="field">Avg ticket</td><td>Average amount each customer spends.</td></tr>
+  <tr><td class="field">Live / Test</td><td>Live is the real database; Test is a practice sandbox. See Ch.11.</td></tr>
+</table>
+
+<h3>A.3 Good habits</h3>
+<ul>
+  <li>Always <b>sign out</b> when you step away — the app won't remember you.</li>
+  <li><b>Generate the PDF before archiving</b> a year; deletion can't be undone.</li>
+  <li>Use <b>Inactive</b> rather than deleting, so you keep the history.</li>
+  <li>Double-check you're on the right <b>database mode</b> before a busy day.</li>
+</ul>
+
+<div class="mini-foot">NOVYX BARBERSHOP · ADMIN USER MANUAL · v1.1 · JUNE 2026 · END OF DOCUMENT</div>
+</section>
+
+</body>
+</html>

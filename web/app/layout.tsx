@@ -29,8 +29,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${sans.variable} ${serif.variable}`}>
       <body className="min-h-screen bg-novyx-bg text-novyx-cream antialiased font-sans">
         <BackendGate>
-          <div className="mx-auto max-w-md px-6 pt-6 pb-28">{children}</div>
-          <FloatingNav />
+          <div className="mx-auto max-w-md px-6 pt-6 pb-8">
+            {children}
+            <FloatingNav />
+          </div>
         </BackendGate>
       </body>
     </html>

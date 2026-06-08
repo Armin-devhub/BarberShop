@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Novyx Barbershop — Customer Guide</title>
+<style>
+  :root{
+    --ink:#1C1A17;
+    --body:#2B2823;
+    --muted:#74706A;
+    --subtle:#A8A39B;
+    --line:#E7E5E0;
+    --gold:#B89865;
+    --gold-deep:#94703F;
+    --gold-soft:#F4ECDD;
+    --green:#0E9F6E;
+    --green-soft:#E6F5EE;
+    --danger:#B4123A;
+    --danger-soft:#FCEBEA;
+    --paper:#FFFFFF;
+    --canvas:#FAF8F4;
+  }
+  *{ box-sizing:border-box; }
+  @page{ size:A4; margin:18mm 16mm 18mm 16mm; }
+  @page:first{ margin:0; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color:var(--body); font-size:10.8pt; line-height:1.6;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+
+  /* ---------- Cover (dark, premium) ---------- */
+  .cover{
+    position:relative; height:297mm; width:100%;
+    background:linear-gradient(160deg,#26231F 0%, #1C1A17 55%, #12100E 100%);
+    color:#F3ECDF; page-break-after:always; overflow:hidden;
+  }
+  .cover .glow{ position:absolute; width:540px; height:540px; border-radius:50%;
+    background:radial-gradient(circle, rgba(184,152,101,0.30) 0%, rgba(184,152,101,0) 70%);
+    top:-170px; right:-150px; }
+  .cover .glow2{ position:absolute; width:380px; height:380px; border-radius:50%;
+    background:radial-gradient(circle, rgba(184,152,101,0.16) 0%, rgba(184,152,101,0) 70%);
+    bottom:-150px; left:-120px; }
+  .cover-inner{ position:absolute; inset:0; padding:40mm 26mm; display:flex; flex-direction:column; }
+  .brand-mark{ display:flex; align-items:center; gap:14px; }
+  .diamond{ width:30px; height:30px; transform:rotate(45deg);
+    background:linear-gradient(135deg,#D8B87E,#B89865); border-radius:7px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.4); }
+  .brand-name{ font-size:20pt; font-weight:800; letter-spacing:-0.5px; color:#F3ECDF; }
+  .brand-tag{ font-size:9pt; letter-spacing:3px; margin-top:2px; color:var(--gold); }
+  .cover-title-block{ margin-top:auto; }
+  .cover-kicker{ font-size:11pt; font-weight:700; letter-spacing:4px; text-transform:uppercase; color:var(--gold); }
+  .cover-title{ font-size:43pt; font-weight:800; letter-spacing:-1.2px; line-height:1.04; margin:10px 0 6px; color:#F6EFE3; }
+  .cover-sub{ font-size:14pt; font-weight:400; color:#CDC3B2; max-width:120mm; }
+  .cover-rule{ height:3px; width:80px; background:var(--gold); border-radius:3px; margin:26px 0; }
+  .cover-meta{ font-size:10pt; color:#CDC3B2; }
+  .cover-meta b{ font-weight:700; color:#EBE2D2; }
+  .cover-foot{ margin-top:28px; font-size:8.5pt; letter-spacing:1px; color:var(--gold-deep); text-transform:uppercase; }
+
+  /* ---------- Typography ---------- */
+  h1,h2,h3,h4{ color:var(--ink); font-weight:800; letter-spacing:-0.3px; }
+  h2.section{ font-size:21pt; margin:0 0 2px; padding-top:2mm; }
+  .section-kicker{ font-size:8.5pt; font-weight:800; letter-spacing:2.5px; color:var(--gold-deep);
+    text-transform:uppercase; margin-bottom:4px; }
+  h3{ font-size:13pt; margin:18px 0 6px; }
+  p{ margin:6px 0; }
+  ul,ol{ margin:6px 0; padding-left:20px; }
+  li{ margin:3px 0; }
+  b,strong{ color:var(--ink); }
+  .lead{ font-size:11.5pt; color:var(--body); }
+
+  .page-break{ page-break-before:always; }
+  section.screen{ page-break-before:always; }
+
+  .doc-head{ display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1px solid var(--line); padding-bottom:6px; margin-bottom:14px;
+    color:var(--subtle); font-size:8pt; letter-spacing:1.5px; text-transform:uppercase; }
+  .doc-head .dh-brand{ font-weight:800; color:var(--gold-deep); }
+
+  /* ---------- TOC ---------- */
+  .toc-list{ list-style:none; margin:0; padding:0; }
+  .toc-list li{ display:flex; align-items:baseline; gap:10px; padding:8px 0;
+    border-bottom:1px dotted var(--line); font-size:11pt; }
+  .toc-num{ color:var(--gold-deep); font-weight:800; width:30px; flex:none; font-variant-numeric:tabular-nums; }
+  .toc-label{ color:var(--ink); font-weight:600; }
+
+  /* ---------- Figures ---------- */
+  figure{ margin:14px 0 6px; page-break-inside:avoid; }
+  figure img{ display:block; border:1px solid #34302A; border-radius:14px;
+    box-shadow:0 6px 18px rgba(28,26,23,0.22); }
+  .shot-phone img{ width:54%; margin:0 auto; }
+  .shot-wide img{ width:74%; margin:0 auto; }
+  figcaption{ font-size:8.5pt; color:var(--muted); margin-top:8px; text-align:center; font-style:italic; }
+  .figrow{ display:flex; gap:18px; justify-content:center; align-items:flex-start;
+    margin:14px 0 6px; page-break-inside:avoid; }
+  .figrow figure{ margin:0; width:50%; }
+  .figrow figure img{ width:100%; }
+
+  /* ---------- Callouts ---------- */
+  .callout{ border-radius:8px; padding:10px 14px; margin:12px 0; font-size:9.9pt;
+    page-break-inside:avoid; border-left:4px solid var(--gold); background:var(--gold-soft); }
+  .callout .ct{ font-weight:800; font-size:8.5pt; letter-spacing:1.2px; text-transform:uppercase;
+    display:block; margin-bottom:2px; color:var(--gold-deep); }
+  .callout.tip{ border-left-color:var(--green); background:var(--green-soft); }
+  .callout.tip .ct{ color:#0B7A55; }
+  .callout.warn{ border-left-color:#DC2626; background:var(--danger-soft); }
+  .callout.warn .ct{ color:var(--danger); }
+
+  /* ---------- Steps ---------- */
+  ol.steps{ counter-reset:step; list-style:none; padding-left:0; margin:10px 0; }
+  ol.steps > li{ position:relative; padding-left:36px; margin:10px 0; page-break-inside:avoid; font-size:10.8pt; }
+  ol.steps > li::before{ counter-increment:step; content:counter(step);
+    position:absolute; left:0; top:-1px; width:24px; height:24px; border-radius:50%;
+    background:var(--gold); color:#fff; font-size:10pt; font-weight:800;
+    display:flex; align-items:center; justify-content:center; }
+
+  /* big numbered flow on the intro */
+  .flow{ display:flex; flex-direction:column; gap:10px; margin:14px 0; }
+  .flow .frow{ display:flex; gap:14px; align-items:flex-start; }
+  .flow .fn{ width:30px; height:30px; flex:none; border-radius:50%; background:var(--ink); color:var(--gold);
+    font-weight:800; font-size:12pt; display:flex; align-items:center; justify-content:center; }
+  .flow .ft b{ color:var(--ink); }
+
+  /* ---------- Reference tables ---------- */
+  table.ref{ width:100%; border-collapse:collapse; margin:12px 0; font-size:9.8pt; page-break-inside:avoid; }
+  table.ref th{ background:var(--ink); color:#F3ECDF; text-align:left; padding:7px 10px;
+    font-size:8.5pt; letter-spacing:0.6px; text-transform:uppercase; }
+  table.ref td{ border-bottom:1px solid var(--line); padding:7px 10px; vertical-align:top; }
+  table.ref tr:nth-child(even) td{ background:var(--canvas); }
+  table.ref td.field{ font-weight:700; color:var(--ink); white-space:nowrap; }
+
+  .pill{ display:inline-block; padding:1px 8px; border-radius:999px; font-size:8pt; font-weight:700;
+    letter-spacing:0.4px; vertical-align:middle; }
+  .pill.gold{ background:var(--gold-soft); color:var(--gold-deep); }
+  .pill.green{ background:var(--green-soft); color:#0B7A55; }
+  .btnchip{ display:inline-block; padding:2px 9px; border-radius:7px; font-size:8.8pt; font-weight:700; vertical-align:middle; }
+  .btnchip.go{ background:var(--gold); color:#fff; }
+  .btnchip.out{ background:#fff; color:var(--ink); border:1px solid var(--line); }
+
+  .purpose{ background:var(--canvas); border:1px solid var(--line); border-radius:8px;
+    padding:10px 14px; margin:10px 0 4px; font-size:10.2pt; }
+  .purpose b{ color:var(--gold-deep); }
+
+  .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; vertical-align:middle; margin-right:3px; }
+  .dot.g{ background:var(--green); } .dot.a{ background:#E0A82E; } .dot.r{ background:#DC2626; }
+
+  .mini-foot{ margin-top:30px; padding-top:8px; border-top:1px solid var(--line);
+    font-size:8pt; color:var(--subtle); text-align:center; letter-spacing:1px; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="glow"></div>
+  <div class="glow2"></div>
+  <div class="cover-inner">
+    <div class="brand-mark">
+      <div class="diamond"></div>
+      <div>
+        <div class="brand-name">Novyx</div>
+        <div class="brand-tag">BARBERSHOP</div>
+      </div>
+    </div>
+    <div class="cover-title-block">
+      <div class="cover-kicker">Customer Guide</div>
+      <div class="cover-title">Skip the<br>Wait</div>
+      <div class="cover-sub">Join the queue from your phone, watch your place in line, and walk in right when it's your turn.</div>
+      <div class="cover-rule"></div>
+      <div class="cover-meta">
+        <b>For:</b> Walk-in customers<br>
+        <b>How:</b> Scan the QR code at the shop — no app to install<br>
+        <b>Version:</b> 1.0 &nbsp;·&nbsp; <b>Issued:</b> June 2026
+      </div>
+      <div class="cover-foot">Welcome to Novyx</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ INTRO + TOC ============ -->
+<div class="doc-head"><span class="dh-brand">NOVYX · CUSTOMER GUIDE</span><span>Welcome</span></div>
+<div class="section-kicker">Welcome</div>
+<h2 class="section">No more waiting around</h2>
+<p class="lead">At Novyx you join the queue from your own phone. Instead of sitting and wondering how long you'll wait, you can see exactly where you are in line — and we'll text you when you're nearly up. Go for a coffee, run an errand, and come back right on time.</p>
+
+<p>There's nothing to download. Just scan the QR code at the shop with your phone's camera and the page opens in your browser.</p>
+
+<h3>How it works</h3>
+<div class="flow">
+  <div class="frow"><div class="fn">1</div><div class="ft"><b>Scan &amp; sign in</b> — scan the QR code, then type your name and WhatsApp number.</div></div>
+  <div class="frow"><div class="fn">2</div><div class="ft"><b>Pick your barber &amp; service</b> — choose who you want and what you'd like done.</div></div>
+  <div class="frow"><div class="fn">3</div><div class="ft"><b>Join the queue</b> — you get a number and a live view of the line.</div></div>
+  <div class="frow"><div class="fn">4</div><div class="ft"><b>Come back when it's your turn</b> — watch your spot, get a heads-up, and take the chair.</div></div>
+</div>
+
+<div class="callout tip">
+  <span class="ct">The big idea</span>
+  Keep the queue page open on your phone. It updates by itself as people ahead of you finish — you never need to refresh, and you won't lose your place.
+</div>
+
+<div class="page-break"></div>
+<div class="doc-head"><span class="dh-brand">NOVYX · CUSTOMER GUIDE</span><span>Contents</span></div>
+<div class="section-kicker">Contents</div>
+<h2 class="section">What's inside</h2>
+<ol class="toc-list">
+  <li><span class="toc-num">1</span><span class="toc-label">Tell us who you are</span></li>
+  <li><span class="toc-num">2</span><span class="toc-label">Choose your barber</span></li>
+  <li><span class="toc-num">3</span><span class="toc-label">Pick your service &amp; add a code</span></li>
+  <li><span class="toc-num">4</span><span class="toc-label">Watch your place in line</span></li>
+  <li><span class="toc-num">5</span><span class="toc-label">Prices, discounts &amp; receipts</span></li>
+  <li><span class="toc-num">6</span><span class="toc-label">Cancel or book again</span></li>
+  <li><span class="toc-num">7</span><span class="toc-label">Take the shop home</span></li>
+  <li><span class="toc-num">A</span><span class="toc-label">Good to know — quick answers</span></li>
+</ol>
+
+<!-- ============ 1. WELCOME ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · CUSTOMER GUIDE</span><span>1 · Tell us who you are</span></div>
+<div class="section-kicker">Step 1</div>
+<h2 class="section">Tell us who you are</h2>
+<div class="purpose"><b>Where you start:</b> After scanning the QR code, this is the first screen you see.</div>
+
+<figure class="shot-phone">
+  <img src="screenshots/01-welcome.png" alt="Welcome screen">
+  <figcaption>Enter your name and WhatsApp number to begin.</figcaption>
+</figure>
+
+<ol class="steps">
+  <li>Type your <b>name</b> in the first box.</li>
+  <li>Type your <b>WhatsApp number</b>. The <b>+60</b> is already there, so just enter the rest (for example <b>12 345 6789</b>).</li>
+  <li>Tap <b>CONTINUE</b>.</li>
+</ol>
+
+<div class="callout">
+  <span class="ct">Why we ask for your number</span>
+  We text your receipt and a heads-up to this WhatsApp number — so please make sure it's correct. We won't use it for anything else.
+</div>
+<div class="callout tip">
+  <span class="ct">Already in the queue?</span>
+  If you've already joined today, opening the page again takes you straight back to your live queue status — you won't have to type your details twice.
+</div>
+</section>
+
+<!-- ============ 2. BARBER ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · CUSTOMER GUIDE</span><span>2 · Choose your barber</span></div>
+<div class="section-kicker">Step 2</div>
+<h2 class="section">Choose your barber</h2>
+<div class="purpose"><b>What you do here:</b> Pick which barber you'd like, and see how busy each one is.</div>
+
+<figure class="shot-phone">
+  <img src="screenshots/02-choose-barber.png" alt="Choose your barber screen">
+  <figcaption>Each barber shows how long the wait is. Tap a name to continue.</figcaption>
+</figure>
+
+<p>Only barbers who are working right now appear here. The little dot and the text tell you how busy they are:</p>
+<table class="ref">
+  <tr><th style="width:34%">What you see</th><th>What it means</th></tr>
+  <tr><td class="field"><span class="dot g"></span> Free now</td><td>No wait — you'd be next.</td></tr>
+  <tr><td class="field"><span class="dot a"></span> X ahead · short wait</td><td>A couple of people in front of you.</td></tr>
+  <tr><td class="field"><span class="dot r"></span> X ahead · long wait</td><td>Busy — a longer wait.</td></tr>
+</table>
+<p>Tap the barber you want to move on to their services.</p>
+
+<div class="callout tip">
+  <span class="ct">It's live</span>
+  This list updates on its own. If it says "No barbers on shift right now," none are working at the moment — keep the page open and they'll appear when they start.
+</div>
+</section>
+
+<!-- ============ 3. SERVICE ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · CUSTOMER GUIDE</span><span>3 · Pick your service</span></div>
+<div class="section-kicker">Step 3</div>
+<h2 class="section">Pick your service &amp; add a code</h2>
+<div class="purpose"><b>What you do here:</b> Choose what you'd like done, add a discount code if you have one, and join.</div>
+
+<div class="figrow">
+  <figure><img src="screenshots/03-pick-service.png" alt="Pick a service"><figcaption>Choose a service…</figcaption></figure>
+  <figure><img src="screenshots/03b-discount-total.png" alt="Discount and total"><figcaption>…add a code, see your total, and join.</figcaption></figure>
+</div>
+
+<ol class="steps">
+  <li>Tap the service you want. The price shows on the right.</li>
+  <li><b>Not sure what you want?</b> Tap <b>Custom Service</b> — your barber will decide and set the price (see Chapter 5).</li>
+  <li>Got a promo code? Type it in <b>DISCOUNT CODE (OPTIONAL)</b>. If it's valid you'll see "<b>X% OFF APPLIED</b>" in green and the <b>Total</b> updates.</li>
+  <li>Tap <b>JOIN QUEUE →</b>.</li>
+</ol>
+
+<div class="callout">
+  <span class="ct">If a code doesn't work</span>
+  You'll see a short message like "Code not found", "Code expired" or "Limit reached". Double-check the spelling, or just continue without one — a code is always optional.
+</div>
+</section>
+
+<!-- ============ 4. STATUS ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · CUSTOMER GUIDE</span><span>4 · Your place in line</span></div>
+<div class="section-kicker">Step 4</div>
+<h2 class="section">Watch your place in line</h2>
+<div class="purpose"><b>The main screen:</b> Once you've joined, this page shows your number and updates live until it's your turn.</div>
+
+<figure class="shot-phone">
+  <img src="screenshots/04-queue-status.png" alt="Live queue status">
+  <figcaption>Your live status — number, wait estimate, booking and today's queue.</figcaption>
+</figure>
+
+<table class="ref">
+  <tr><th style="width:36%">On the screen</th><th>What it tells you</th></tr>
+  <tr><td class="field">YOU ARE NO. 03</td><td>Your place in the line right now.</td></tr>
+  <tr><td class="field">~70 min wait</td><td>A rough estimate of how long until your turn.</td></tr>
+  <tr><td class="field">2 people ahead of you</td><td>How many are still in front of you. This counts down as they finish.</td></tr>
+  <tr><td class="field">YOUR BOOKING</td><td>Your service and price, including any discount.</td></tr>
+  <tr><td class="field">TODAY'S QUEUE</td><td>The full line. <b>You</b> are highlighted; <b>(IN CHAIR)</b> marks whoever is being served.</td></tr>
+</table>
+
+<p>As people ahead finish, your number drops. When it's your turn the screen says <b>"It's your turn. Head to the chair."</b></p>
+
+<div class="callout warn">
+  <span class="ct">Keep this page open</span>
+  Don't close the tab while you wait — it's how you keep your spot and see live updates. We'll also text your WhatsApp when you're nearly up, so keep your phone handy.
+</div>
+</section>
+
+<!-- ============ 5. PRICES ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · CUSTOMER GUIDE</span><span>5 · Prices &amp; receipts</span></div>
+<div class="section-kicker">Good to know</div>
+<h2 class="section">Prices, discounts &amp; receipts</h2>
+<div class="purpose"><b>What this covers:</b> How your price is worked out, and what you'll receive.</div>
+
+<h3>5.1 How your total is built</h3>
+<p>Your <b>booking</b> on the status page always shows a clear breakdown:</p>
+<table class="ref">
+  <tr><th style="width:30%">Line</th><th>Meaning</th></tr>
+  <tr><td class="field">Service price</td><td>The price of the service you picked.</td></tr>
+  <tr><td class="field">Discount</td><td>Money off from a valid promo code (shown in green).</td></tr>
+  <tr><td class="field">Add-on</td><td>An extra your barber added (e.g. a little beard work).</td></tr>
+  <tr><td class="field">Reduction</td><td>An amount your barber took off.</td></tr>
+  <tr><td class="field">Total</td><td>The final amount you pay.</td></tr>
+</table>
+
+<h3>5.2 Custom Service</h3>
+<p>If you chose <b>Custom Service</b>, the price shows as <b>"Set by barber"</b> until your barber finishes and decides it. If you added a discount code, it still applies to whatever price your barber sets.</p>
+
+<h3>5.3 Your receipt</h3>
+<p>We send your receipt to your <b>WhatsApp</b> number — the one you typed at the start. There's nothing you need to do; just check your messages.</p>
+
+<div class="callout tip">
+  <span class="ct">Pay at the shop</span>
+  You pay your barber in person as usual. The app just shows the price and keeps your place in line — it doesn't take payment.
+</div>
+</section>
+
+<!-- ============ 6. CANCEL ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · CUSTOMER GUIDE</span><span>6 · Cancel or book again</span></div>
+<div class="section-kicker">Step 6</div>
+<h2 class="section">Cancel or book again</h2>
+<div class="purpose"><b>What you do here:</b> Leave the queue if your plans change, or start a fresh booking after your cut.</div>
+
+<h3>6.1 Changed your mind?</h3>
+<ol class="steps">
+  <li>On your status page, tap <b>CANCEL MY SPOT</b>.</li>
+  <li>Confirm "<b>Cancel your spot in the queue?</b>"</li>
+  <li>You're removed from the line. You can re-join any time.</li>
+</ol>
+<p>You can cancel while you're still waiting. Once you're in the chair, just speak to your barber.</p>
+
+<h3>6.2 After your cut</h3>
+<p>When your service is finished, the screen shows <b>"Service complete. Thanks for visiting!"</b> and a <b>BOOK ANOTHER CUT</b> button — tap it any time you'd like to join the queue again.</p>
+
+<div class="callout tip">
+  <span class="ct">Quick tip</span>
+  Wherever you are in the app, the gold button at the bottom takes you where you need to go next — <b>SEE YOUR QUEUE</b> while you're waiting, or <b>BOOK A BARBER</b> to start again.
+</div>
+</section>
+
+<!-- ============ 7. PRODUCTS ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · CUSTOMER GUIDE</span><span>7 · Take the shop home</span></div>
+<div class="section-kicker">Step 7</div>
+<h2 class="section">Take the shop home</h2>
+<div class="purpose"><b>What you do here:</b> Browse the grooming products we sell at the shop.</div>
+
+<figure class="shot-phone">
+  <img src="screenshots/05-products.png" alt="Products page">
+  <figcaption>Our products and their prices.</figcaption>
+</figure>
+
+<p>Tap <b>SEE OUR PRODUCTS</b> (the button at the bottom of the screen) any time to see what's on the shelf — pomade, shampoo, serums and more, with prices.</p>
+
+<div class="callout">
+  <span class="ct">How to buy</span>
+  This page is just to browse. To buy something, simply <b>ask your barber</b> while you're in the chair.
+</div>
+</section>
+
+<!-- ============ APPENDIX ============ -->
+<section class="screen">
+<div class="doc-head"><span class="dh-brand">NOVYX · CUSTOMER GUIDE</span><span>Appendix A · Good to know</span></div>
+<div class="section-kicker">Appendix A</div>
+<h2 class="section">Good to know — quick answers</h2>
+
+<table class="ref">
+  <tr><th style="width:42%">Question</th><th>Answer</th></tr>
+  <tr><td class="field">Do I need to install an app?</td><td>No. Scan the QR code and it opens in your phone's browser.</td></tr>
+  <tr><td class="field">Will I lose my place if I lock my phone?</td><td>No — your spot is saved. Just keep the page open so you can see live updates and our text.</td></tr>
+  <tr><td class="field">How will I know when I'm up?</td><td>Your number counts down on the screen, and we text your WhatsApp when you're nearly up.</td></tr>
+  <tr><td class="field">Can I leave and come back?</td><td>Yes — that's the whole idea. Watch your number and return when it's nearly your turn.</td></tr>
+  <tr><td class="field">Can I join two barbers at once?</td><td>No — you hold one spot at a time. Cancel your current spot first if you want to switch.</td></tr>
+  <tr><td class="field">What if my barber takes a break?</td><td>You keep your place. New customers just can't join them until they're back.</td></tr>
+  <tr><td class="field">Where do I pay?</td><td>In person with your barber, as usual. The app only shows the price.</td></tr>
+  <tr><td class="field">I used a different phone / cleared my browser.</td><td>Just scan again and re-enter your name and number to see your queue.</td></tr>
+</table>
+
+<h3>Three things to remember</h3>
+<ul>
+  <li><b>Keep the queue page open</b> while you wait.</li>
+  <li><b>Check your WhatsApp</b> — that's where your heads-up and receipt arrive.</li>
+  <li><b>Be ready</b> when it says "It's your turn" — head to the chair.</li>
+</ul>
+
+<div class="mini-foot">NOVYX BARBERSHOP · CUSTOMER GUIDE · v1.0 · JUNE 2026 · SEE YOU IN THE CHAIR</div>
+</section>
+
+</body>
+</html>

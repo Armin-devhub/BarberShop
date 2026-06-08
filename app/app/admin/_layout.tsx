@@ -42,6 +42,7 @@ const NAV_GROUPS: { heading: string; items: NavItem[] }[] = [
     heading: 'SYSTEM',
     items: [
       { label: 'Reports', path: '/admin/reports', icon: 'bar-chart-outline' },
+      { label: 'QR Code', path: '/admin/qr', icon: 'qr-code-outline' },
       { label: 'Settings', path: '/admin/settings', icon: 'settings-outline' }
     ]
   }
