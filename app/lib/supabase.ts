@@ -138,6 +138,12 @@ export interface CleanDatabaseResult {
 // Requires the typed confirmation string the RPC checks ("ERASE").
 export async function cleanDatabase(confirm: string): Promise<CleanDatabaseResult> {
   const { data, error } = await supabase.rpc('clean_database', { p_confirm: confirm });
-  if (error) throw error;
+  // Supabase errors are plain PostgrestError objects, not Error instances, so a
+  // bare `throw error` is lost by callers that check `e instanceof Error`. Wrap it
+  // so the real cause (missing RPC, operator-secret mismatch, role guard) surfaces.
+  if (error) {
+    const detail = [error.message, error.hint].filter(Boolean).join(' — ');
+    throw new Error(detail || 'Clean database failed');
+  }
   return data as CleanDatabaseResult;
 }
