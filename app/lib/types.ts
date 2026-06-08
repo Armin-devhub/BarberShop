@@ -135,3 +135,21 @@ export const buildWhatsAppUrl = (phone: string, message: string): string => {
   const normalized = normalizeMyPhone(phone);
   return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
 };
+
+/**
+ * Android-only deep link that targets the WhatsApp **Business** app specifically
+ * (package com.whatsapp.w4b). Chrome on Android understands `intent://` URLs and
+ * routes them to the named package, so this opens Business even when the personal
+ * WhatsApp is also installed. If Business isn't installed, browser_fallback_url
+ * sends the user to the normal wa.me link instead. iOS has no package selector,
+ * so this is for Android (native or web/PWA in Chrome) only.
+ */
+export const buildWhatsAppBusinessIntent = (phone: string, message: string): string => {
+  const normalized = normalizeMyPhone(phone);
+  const text = encodeURIComponent(message);
+  const fallback = encodeURIComponent(`https://wa.me/${normalized}?text=${text}`);
+  return (
+    `intent://send?phone=${normalized}&text=${text}` +
+    `#Intent;scheme=whatsapp;package=com.whatsapp.w4b;S.browser_fallback_url=${fallback};end`
+  );
+};

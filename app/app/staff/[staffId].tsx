@@ -16,6 +16,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import {
   buildWhatsAppUrl,
+  buildWhatsAppBusinessIntent,
   formatRM,
   type Break,
   type QueueEntry,
@@ -299,10 +300,18 @@ export default function StaffDashboard() {
   }
 
   async function handleSendReceipt(entry: QueueEntryWithService) {
+    // On Android (incl. the web PWA in Chrome) we route receipts to WhatsApp
+    // *Business* via an intent:// URL — done by navigating the current page, so
+    // no pre-opened tab is needed. Everywhere else we use wa.me.
+    const androidWeb =
+      Platform.OS === 'web' &&
+      typeof navigator !== 'undefined' &&
+      /android/i.test(navigator.userAgent);
     // iOS Safari blocks window.open once an await has run (the phone fetch
     // below breaks the user-gesture). So on web we open the tab synchronously
     // now and just redirect it to the wa.me URL once it's built.
-    const waWindow = Platform.OS === 'web' ? window.open('', '_blank') : null;
+    const waWindow =
+      Platform.OS === 'web' && !androidWeb ? window.open('', '_blank') : null;
 
     const svcName = entry.services?.name ?? 'Custom service';
     const base = entry.base_price_sen ?? 0;
@@ -332,13 +341,25 @@ export default function StaffDashboard() {
       `\n\nQueue #${entry.queue_number}\n\nSee you next time!`;
     const url = buildWhatsAppUrl(phone as string, message);
     if (Platform.OS === 'web') {
-      // wa.me opens WhatsApp Web / the app from a browser even without the
-      // native app installed, so no canOpenURL gate is needed here.
-      if (waWindow) waWindow.location.href = url;
-      else window.open(url, '_blank');
+      if (androidWeb) {
+        // Force WhatsApp Business; falls back to wa.me if it isn't installed.
+        window.location.href = buildWhatsAppBusinessIntent(phone as string, message);
+      } else if (waWindow) {
+        // wa.me opens WhatsApp Web / the app from a browser even without the
+        // native app installed, so no canOpenURL gate is needed here.
+        waWindow.location.href = url;
+      } else {
+        window.open(url, '_blank');
+      }
     } else {
+      // Native Android: also target Business; iOS has no package selector so it
+      // uses the plain wa.me link.
+      const nativeUrl =
+        Platform.OS === 'android'
+          ? buildWhatsAppBusinessIntent(phone as string, message)
+          : url;
       try {
-        await Linking.openURL(url);
+        await Linking.openURL(nativeUrl);
       } catch {
         Alert.alert('Could not open WhatsApp', 'Make sure WhatsApp is installed.');
       }
