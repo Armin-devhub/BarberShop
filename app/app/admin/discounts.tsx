@@ -13,10 +13,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '@/lib/supabase';
+import { supabase, deleteDiscount, countDiscountBookings } from '@/lib/supabase';
 import type { DiscountCode } from '@/lib/types';
 import { colors, pageHeader, radius, space } from '@/lib/theme';
 import { adminUI as s } from '@/lib/adminUI';
+import { DeleteRowButton } from '@/lib/DeleteRowButton';
 
 interface EditableDiscount {
   id?: string;
@@ -320,6 +321,26 @@ export default function AdminDiscounts() {
                 />
               </View>
             </View>
+
+            {editing?.id && (
+              <DeleteRowButton
+                label="discount code"
+                name={editing.code?.trim() || 'this code'}
+                onConfirm={async () => {
+                  await deleteDiscount(editing.id!);
+                }}
+                onDeleted={() => {
+                  close();
+                  load();
+                }}
+                getImpact={async () => {
+                  const n = await countDiscountBookings(editing.id!);
+                  return n > 0
+                    ? `Used in ${n} past booking${n === 1 ? '' : 's'}. The code is removed and unlinked from them — those sales are kept.`
+                    : 'This code has never been used.';
+                }}
+              />
+            )}
           </ScrollView>
         </SafeAreaView>
       </Modal>

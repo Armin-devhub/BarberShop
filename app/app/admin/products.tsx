@@ -12,10 +12,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '@/lib/supabase';
+import { supabase, deleteProduct } from '@/lib/supabase';
 import { formatRM, type Product } from '@/lib/types';
 import { colors, pageHeader } from '@/lib/theme';
 import { adminUI as s } from '@/lib/adminUI';
+import { DeleteRowButton } from '@/lib/DeleteRowButton';
 
 interface EditableProduct {
   id?: string;
@@ -237,6 +238,18 @@ export default function AdminProducts() {
                 />
               </View>
             </View>
+
+            {editing?.id && (
+              <DeleteRowButton
+                label="product"
+                name={editing.name?.trim() || 'this product'}
+                onConfirm={() => deleteProduct(editing.id!)}
+                onDeleted={() => {
+                  close();
+                  load();
+                }}
+              />
+            )}
           </ScrollView>
         </SafeAreaView>
       </Modal>

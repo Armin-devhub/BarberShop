@@ -13,9 +13,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '@/lib/supabase';
+import { supabase, deleteService, countServiceBookings } from '@/lib/supabase';
 import { formatRM, type Service } from '@/lib/types';
 import { colors, pageHeader, radius, space, cardShadow } from '@/lib/theme';
+import { DeleteRowButton } from '@/lib/DeleteRowButton';
 
 const DURATION_PRESETS = [15, 30, 45, 60];
 
@@ -279,6 +280,26 @@ export default function AdminServices() {
                 />
               </View>
             </View>
+
+            {editing?.id && (
+              <DeleteRowButton
+                label="service"
+                name={editing.name?.trim() || 'this service'}
+                onConfirm={async () => {
+                  await deleteService(editing.id!);
+                }}
+                onDeleted={() => {
+                  close();
+                  load();
+                }}
+                getImpact={async () => {
+                  const n = await countServiceBookings(editing.id!);
+                  return n > 0
+                    ? `This service was used in ${n} past booking${n === 1 ? '' : 's'} — those bookings will also be permanently deleted from your reports.`
+                    : 'This service has never been used, so no bookings are affected.';
+                }}
+              />
+            )}
           </ScrollView>
         </SafeAreaView>
       </Modal>

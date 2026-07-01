@@ -13,9 +13,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '@/lib/supabase';
+import { supabase, deleteStaff, countStaffBookings } from '@/lib/supabase';
 import type { EmploymentType, Staff, StaffRole } from '@/lib/types';
 import { cardShadow, colors, pageHeader, radius, space } from '@/lib/theme';
+import { DeleteRowButton } from '@/lib/DeleteRowButton';
+import { useAuth } from '@/lib/auth';
 
 type EditableStaff = Partial<Staff> & {
   name?: string;
@@ -28,6 +30,7 @@ type EditableStaff = Partial<Staff> & {
 };
 
 export default function AdminStaff() {
+  const { staff: me } = useAuth();
   const [list, setList] = useState<Staff[] | null>(null);
   const [editing, setEditing] = useState<EditableStaff | null>(null);
   const [visible, setVisible] = useState(false);
@@ -362,6 +365,29 @@ export default function AdminStaff() {
               <Text style={s.helpText}>
                 This admin has no login linked. Recreate the row to provision one.
               </Text>
+            )}
+
+            {editing?.id && editing.id !== me?.id && (
+              <DeleteRowButton
+                label="staff member"
+                name={editing.name?.trim() || 'this staff member'}
+                onConfirm={() => deleteStaff(editing.id!)}
+                onDeleted={() => {
+                  close();
+                  load();
+                }}
+                getImpact={async () => {
+                  const n = await countStaffBookings(editing.id!);
+                  const base =
+                    'Their login is removed and their shifts, breaks and pay records are permanently deleted.';
+                  return n > 0
+                    ? `${base} ${n} past booking${n === 1 ? '' : 's'} tied to them will also be deleted from your reports.`
+                    : base;
+                }}
+              />
+            )}
+            {editing?.id && editing.id === me?.id && (
+              <Text style={s.helpText}>You can't delete your own account.</Text>
             )}
           </ScrollView>
         </SafeAreaView>

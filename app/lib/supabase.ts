@@ -147,3 +147,67 @@ export async function cleanDatabase(confirm: string): Promise<CleanDatabaseResul
   }
   return data as CleanDatabaseResult;
 }
+
+// ===== Admin row deletes =====
+// Supabase errors are plain objects (not Error instances), so every helper wraps
+// them in a real Error — otherwise callers that check `e instanceof Error` show a
+// generic message instead of the real cause. All are admin-only + operator-gated
+// server-side.
+
+// Products have no dependents, so a direct delete (admin RLS) is enough.
+export async function deleteProduct(id: string): Promise<void> {
+  const { error } = await supabase.from('products').delete().eq('id', id);
+  if (error) {
+    const detail = [error.message, error.hint].filter(Boolean).join(' — ');
+    throw new Error(detail || 'Could not delete product');
+  }
+}
+
+// Services/discounts go through operator-gated, admin-only RPCs that also clear
+// their references in queue_entries (which the app role can't delete directly).
+// Returns the number of past bookings affected (deleted for a service, unlinked
+// for a discount).
+export async function deleteService(id: string): Promise<number> {
+  const { data, error } = await supabase.rpc('admin_delete_service', { p_id: id });
+  if (error) {
+    const detail = [error.message, error.hint].filter(Boolean).join(' — ');
+    throw new Error(detail || 'Could not delete service');
+  }
+  return (data as number) ?? 0;
+}
+
+export async function deleteDiscount(id: string): Promise<number> {
+  const { data, error } = await supabase.rpc('admin_delete_discount', { p_id: id });
+  if (error) {
+    const detail = [error.message, error.hint].filter(Boolean).join(' — ');
+    throw new Error(detail || 'Could not delete discount code');
+  }
+  return (data as number) ?? 0;
+}
+
+// Staff deletion also removes the Supabase auth login, so it runs server-side in
+// the delete-staff Edge Function (service_role). Deleting the staff row cascades
+// their shifts, bookings, breaks and pay records.
+export async function deleteStaff(id: string): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('delete-staff', { body: { id } });
+  if (error || (data as { error?: string })?.error) {
+    const msg = (data as { error?: string })?.error ?? error?.message ?? 'Could not delete staff';
+    throw new Error(msg);
+  }
+}
+
+// Impact counts for the delete confirmation — how much history is attached.
+async function countQueueEntries(
+  column: 'service_id' | 'discount_code_id' | 'staff_id',
+  id: string
+): Promise<number> {
+  const { count } = await supabase
+    .from('queue_entries')
+    .select('id', { count: 'exact', head: true })
+    .eq(column, id);
+  return count ?? 0;
+}
+
+export const countServiceBookings = (id: string) => countQueueEntries('service_id', id);
+export const countDiscountBookings = (id: string) => countQueueEntries('discount_code_id', id);
+export const countStaffBookings = (id: string) => countQueueEntries('staff_id', id);
